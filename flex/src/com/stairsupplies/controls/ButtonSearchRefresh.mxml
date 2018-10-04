@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mx:Button xmlns:mx="http://www.adobe.com/2006/mxml" initialize="update();">
+	<mx:Script>
+		<![CDATA[
+			[Embed(source="assets/refresh.png")]
+			[Bindable] public var imgRefresh:Class;
+			[Embed(source="assets/search.png")]
+			[Bindable] public var imgSearch:Class;
+			
+			private var _type:String = "search";
+		
+			public function setType(type:String):void {
+				if( type != "search" && type != "refresh") {
+					throw new Error('Type should be search or refresh');
+				}
+				
+				_type = type;
+				update();				
+			}
+			
+			private function update():void {
+				if( _type == "search" ) {
+					label = "Search";
+					setStyle("icon", imgSearch);
+				} else {
+					label = "Refresh";
+					setStyle("icon", imgRefresh);
+				}
+			}
+		]]>
+	</mx:Script>
+</mx:Button>

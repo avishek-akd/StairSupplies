@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mx:LinkButton xmlns:mx="http://www.adobe.com/2006/mxml"
+	label="{data.OrderNumber}"
+	toolTip="Create new shipment for order {data.OrderNumber}"
+	click="dispatchEvent(new ShipmentNewEvent(ShipmentNewEvent.SHIPMENT_NEW, data.OrderID));">
+	<mx:Script>
+		<![CDATA[
+			import com.stairsupplies.events.ShipmentNewEvent;
+		]]>
+	</mx:Script>
+</mx:LinkButton>

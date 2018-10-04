@@ -1,0 +1,181 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+Allow an image to be previewed and uploaded programatically. When an image is
+selected it is previewed in a small area above the browse button. To upload the image
+to the server uploadFile must be called programmatically.
+-->
+<mx:VBox xmlns:mx="http://www.adobe.com/2006/mxml" creationComplete="init();">
+	
+	
+	<mx:Metadata>
+		[Event(name="uploadIOError", type="flash.events.IOErrorEvent")]
+		[Event(name="uploadSecurityError", type="flash.events.SecurityErrorEvent")]
+	</mx:Metadata>
+	
+	
+	<mx:Script>
+		<![CDATA[
+			/*  We need to expose the file name externally so it can be validated in one place (for file length)  */
+			[Bindable]
+			public var fileName:String = "";
+			
+			
+			[Embed(source='assets/no_picture.png')]
+			private var noPicture:Class;
+			
+			private var _selectedFile:FileReference;
+			private var _data:ByteArray;
+			private var _imageContainer:Sprite;
+			/*  Prevent the browse file dialog from opening twice  */
+			private var _browseDialogOpen:Boolean = false;
+			
+			
+			private function init():void {
+				addEventListener("invalid", function(event:Event):void {
+					previewContainer.setStyle("borderColor", "#FF0000");
+				});
+				addEventListener("valid", function(event:Event):void {
+					previewContainer.setStyle("borderColor", "#B5B9BB");
+				});
+				
+				_selectedFile = new FileReference();
+				_selectedFile.addEventListener(Event.SELECT, onSelectFile);
+				_selectedFile.addEventListener(Event.CANCEL, onCancelFile);
+				_selectedFile.addEventListener(IOErrorEvent.IO_ERROR, onUploadIoError);
+				_selectedFile.addEventListener(SecurityErrorEvent.SECURITY_ERROR, onUploadSecurityError);
+				
+				previewContainer.addEventListener(MouseEvent.CLICK, function(event:MouseEvent):void {
+					if( ! _browseDialogOpen ) {
+						_selectedFile.browse(new Array(new FileFilter("Images (*.jpg, *.jpeg)", "*.jpg;*.jpeg")));
+						_browseDialogOpen = true;
+					}
+				});
+				clearFile.addEventListener(MouseEvent.CLICK, function(event:MouseEvent):void {
+					/*  reset to initial conditions  */
+					_selectedFile.cancel();
+					resetToDefaults();
+					
+					/*  Prevent the image below from getting this event and opening the file browse dialog  */
+					event.stopImmediatePropagation();
+				});
+				previewContainer.addEventListener(MouseEvent.MOUSE_OVER, function(event:MouseEvent):void {
+					clearFile.alpha = 1;
+				});
+				previewContainer.addEventListener(MouseEvent.MOUSE_OUT, function(event:MouseEvent):void {
+					clearFile.alpha = 0.5;
+				});
+				
+				resetToDefaults();
+			}
+			
+			
+			public function setImage(webDirectory:String, thumbnail:String):void {
+				if( thumbnail != "" ) {
+					imagePreview.source = webDirectory + thumbnail;
+					fileName = thumbnail;
+					_selectedFile.cancel();
+					clearFile.visible = true;
+				}
+			}
+			
+			
+			public function getFileName():String {
+				return fileName;
+			}
+			
+			
+			public function getFileContent():ByteArray {
+				if( ! isFileSelected() ) {
+					return null;
+				}
+				
+				if( _data == null ) {
+					_data = new ByteArray();
+					
+					_selectedFile.data.readBytes(_data, 0, _selectedFile.data.length);
+				}
+				
+				return _data;
+			}
+			
+			
+			/**
+			 *  Return true if a file is selected for upload by the user,
+			 * false otherwise
+			 */
+			public function isFileSelected():Boolean {
+				try{
+					_selectedFile.name;
+				}
+				catch(err:IllegalOperationError){
+					return false;
+				}
+				
+				return true;
+			}
+			
+			
+			/*  	After the user selects an image display a preview of the image
+			and keep the file around for later uploading
+			*/
+			private function onSelectFile(event:Event):void {
+				fileName = _selectedFile.name;
+				clearFile.visible = true;
+				
+				_browseDialogOpen = false;
+				
+				_selectedFile.addEventListener(Event.COMPLETE, loadCompleteHandler);
+				_selectedFile.load();
+			}
+			
+			
+			private function onCancelFile(event:Event):void {
+				_browseDialogOpen = false;
+				
+				resetToDefaults();
+			}
+			
+			
+			private function loadCompleteHandler(event:Event):void {
+				_selectedFile.removeEventListener(Event.COMPLETE, loadCompleteHandler);
+				
+				var loader:Loader = new Loader();
+				loader.contentLoaderInfo.addEventListener(Event.COMPLETE, loadBytesHandler);
+				loader.loadBytes(_selectedFile.data);
+			}
+			
+			
+			private function loadBytesHandler(event:Event):void {
+				var loaderInfo:LoaderInfo = (event.target as LoaderInfo);
+				loaderInfo.removeEventListener(Event.COMPLETE, loadBytesHandler);
+				
+				imagePreview.source = loaderInfo.content;
+			}
+			
+			
+			private function onUploadIoError(event:IOErrorEvent):void {
+				var evt:IOErrorEvent = new IOErrorEvent("uploadIoError", false, false, event.text);
+				dispatchEvent(evt);
+			}
+			
+			
+			private function onUploadSecurityError(event:SecurityErrorEvent):void {
+				var evt:SecurityErrorEvent = new SecurityErrorEvent("uploadSecurityError", false, false, event.text);
+				dispatchEvent(evt);
+			}
+			
+			
+			private function resetToDefaults():void {
+				imagePreview.source = noPicture;
+				fileName = "";
+				clearFile.visible = false;
+			}
+		]]>
+	</mx:Script>
+	
+	
+	<mx:Canvas id="previewContainer" borderStyle="solid" borderColor="#B5B9BB">
+		<mx:Image id="imagePreview" width="100" height="80"/>
+		<mx:Image id="clearFile" source="@Embed('assets/delete.png')" bottom="0" right="0" visible="false" alpha="0.5" useHandCursor="true"/>
+	</mx:Canvas>
+</mx:VBox>

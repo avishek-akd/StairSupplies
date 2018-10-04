@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mx:HBox xmlns:mx="http://www.adobe.com/2006/mxml" initialize="init()">
+
+	<mx:Script>
+		<![CDATA[
+			import mx.events.ItemClickEvent;
+			import mx.collections.ArrayCollection;
+			
+			[Embed("assets/logo_stairs_icon.png")]
+			public const Stairs:Class;
+	
+            [Embed("assets/logo_viewrail_icon.png")]
+            public const Viewrail:Class;
+
+			/*  Type of selector:
+			 * - "search" is for search form and displays an option All
+			 * - "input" is for input forms and displays only the 2 companies
+			 */
+			public var type:String = "search";
+            
+
+			[Bindable]
+			private var _companies:ArrayCollection = new ArrayCollection([
+							{data:0, label:"All"},
+							{data:1, label:"StairSupplies", icon:Stairs},
+							{data:4, label:"Viewrail", icon:Viewrail}
+							]);
+
+			private var _selectedCompanyID:int;
+
+
+			private function init():void {
+				if( type != "search" && type != "input" ) {
+					throw new Error("Type can be only search or input");
+				}
+				if( type == "input" ) {
+					_companies.removeItemAt(0); /*  For input forms remove the All option  */	
+				}
+
+				selectedCompanyID = 1;      /*  StairSupplies is selected by default for now  */
+
+				/*  When a button is clicked update the selected company id  */
+				companySelector.addEventListener(ItemClickEvent.ITEM_CLICK, function(event:ItemClickEvent):void {
+					_selectedCompanyID = event.item.data;
+					dispatchEvent(new Event("change"));
+				});
+			}
+			
+
+			public function get selectedCompanyID():int {
+				return _selectedCompanyID;
+			}
+			public function set selectedCompanyID(value:int):void {
+				var i:int = 0;
+				
+				if( companySelector ) {
+					for(; i < _companies.length; i++ ){
+						if( value == _companies[i].data ) {
+							companySelector.selectedIndex = i;
+						}
+					}
+				}
+
+				_selectedCompanyID = value;
+			}
+		]]>
+	</mx:Script>
+
+	<mx:ToggleButtonBar id="companySelector" dataProvider="{_companies}" />
+</mx:HBox>

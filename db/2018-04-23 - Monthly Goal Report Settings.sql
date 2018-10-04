@@ -1,0 +1,6 @@
+UPDATE
+	TblSettings
+SET 
+	Setting = 'CORE_TEAM_MONTHLY_GOAL'
+WHERE
+	Setting = 'HOUSE_MONTHLY_GOAL';

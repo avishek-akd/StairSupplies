@@ -1,0 +1,105 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mx:VBox xmlns:mx="http://www.adobe.com/2006/mxml" xmlns:local="*" initialize="init();"
+		 xmlns:hillecomp="com.hillelcoren.components.*" xmlns:controls="com.stairsupplies.controls.*">
+	
+	
+	<mx:Script>
+		<![CDATA[
+			import mx.collections.ArrayCollection;
+			import mx.core.FlexGlobals;
+			import mx.rpc.events.ResultEvent;
+			
+			[Embed(source="assets/delete.png")]
+			[Bindable] public var imgDelete:Class;
+
+			
+			[Bindable]
+			private var _autocompleteProducts:ArrayCollection = new ArrayCollection();
+			[Bindable]
+			private var _selectedProducts:ArrayCollection = new ArrayCollection();
+	
+
+			private function init():void {
+				productService.addEventListener(ResultEvent.RESULT, _handleAutocompleteResults);
+
+				autoComplete.addEventListener(AutoComplete.SEARCH_CHANGE, _autocompleteKeywordChange);
+				autoComplete.addEventListener(Event.CHANGE, _handleAutocompleteSelect);
+				
+				deleteButton.addEventListener(MouseEvent.CLICK, _handleDeleteClick);
+			}
+			
+			
+			private function _handleDeleteClick(event:MouseEvent):void {
+				if( selProducts.selectedIndex != -1 ) {
+					_selectedProducts.removeItemAt(selProducts.selectedIndex);
+				}
+			}
+			
+			
+			private function _autocompleteKeywordChange(event:Event):void {
+				var ac:AutoComplete = AutoComplete(event.currentTarget);
+
+				_autocompleteProducts.removeAll();
+				productService.autocompleteIncludedProducts(ac.searchText, _selectedProducts);
+			}
+			
+			
+			private function _handleAutocompleteSelect(event:Event):void {
+				var ac:AutoComplete = AutoComplete(event.currentTarget);
+				
+				if( ac.selectedItems.length > 0) {
+					_selectedProducts.addItem( ac.selectedItems[0] );
+				}
+
+				autoComplete.removeAll();
+			}
+			
+			
+			/*  Don't filter the results on the client side, we already did that on the server side  */
+			private function _noFiltering( item:Object, searchStr:String ):Boolean {
+				return true;
+			}
+			
+			
+			private function _handleAutocompleteResults(event:ResultEvent):void {
+				_autocompleteProducts = event.result as ArrayCollection;
+				autoComplete.search();
+			}	
+
+			
+			public function get selectedProducts():ArrayCollection {
+				return _selectedProducts;
+			}
+
+			
+			public function set selectedProducts( value:ArrayCollection ):void {
+				_selectedProducts = value;
+			}
+		]]>
+	</mx:Script>
+
+	
+	<mx:RemoteObject id="productService" showBusyCursor="true"
+					 destination="ColdFusion"
+					 source="{FlexGlobals.topLevelApplication.cfcRootPath}com.stairsupplies.ProductService">
+		<mx:method name="autocompleteIncludedProducts"/>
+	</mx:RemoteObject>
+	
+	
+	<hillecomp:AutoComplete id="autoComplete" dataProvider="{_autocompleteProducts}" filterFunction="{_noFiltering}"
+								labelField="ProductName" allowNewValues="false" width="300"/>
+	<mx:HBox>
+		<mx:DataGrid id="selProducts" dataProvider="{_selectedProducts}" editable="true" width="300" height="140">
+			<mx:columns>
+				<mx:DataGridColumn dataField="Quantity" width="60" textAlign="center"
+								   editable="true"
+								   itemRenderer="mx.controls.Label"
+								   itemEditor="mx.controls.TextInput"
+								   editorDataField="text"/>
+				<mx:DataGridColumn dataField="ProductName"
+								   editable="false"/>
+			</mx:columns>								  
+		</mx:DataGrid>
+		<mx:Button id="deleteButton" icon="{imgDelete}" enabled="{_selectedProducts.length > 0}" />
+	</mx:HBox>
+</mx:VBox>

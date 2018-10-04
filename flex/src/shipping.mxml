@@ -1,0 +1,210 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mx:Application xmlns:mx="http://www.adobe.com/2006/mxml" xmlns:local="*" layout="vertical" width="100%" height="100%" 
+	creationComplete="initApp();" xmlns:stairsupplies="com.stairsupplies.*" xmlns:controls="com.stairsupplies.controls.*">
+	
+
+	<mx:Style source="assets/shipping.css"/>
+
+	
+	<mx:Script source="Util.as"/>
+	<mx:Script>
+		<![CDATA[
+			import com.stairsupplies.events.*;
+			import com.stairsupplies.shipping.ShipmentDetails;
+			import com.stairsupplies.shipping.ShipmentNew;
+			
+			import mx.binding.utils.BindingUtils;
+			import mx.collections.ArrayCollection;
+			import mx.controls.Alert;
+			import mx.core.FlexGlobals;
+			import mx.managers.PopUpManager;
+			import mx.rpc.events.FaultEvent;
+			import mx.rpc.events.ResultEvent;
+			import mx.utils.ObjectUtil;
+
+
+			[Bindable] public var cfcRootPath:String;
+
+			[Bindable] public var Orders:ArrayCollection;			
+			[Bindable] public var employees:ArrayCollection = new ArrayCollection();
+			[Bindable] public var shippingMethods:ArrayCollection = new ArrayCollection();
+			[Bindable] public var LoggedInUserID:int;
+			[Bindable] public var isAdministrator:Boolean;
+
+			[Bindable] public var dataLoaded:int = 0;
+			private var searchParamsChanged:Boolean = false;
+
+			public function initApp():void {
+				cfcRootPath = FlexGlobals.topLevelApplication.parameters.cfcRootPath;
+
+				orders.addEventListener(FaultEvent.FAULT, faultHandler);
+				orderInfo.addEventListener(FaultEvent.FAULT, faultHandler);
+				
+				orderNumber.addEventListener("enter", function(event:Event):void { searchOrders(); });
+				orderNumber.addEventListener(Event.CHANGE, function(event:Event):void { search.setType('search'); });
+				type.addEventListener(Event.CHANGE, function(event:Event):void { search.setType('search'); });
+				dueDateStart.addEventListener(Event.CHANGE, function(event:Event):void { search.setType('search'); });
+				dueDateEnd.addEventListener(Event.CHANGE, function(event:Event):void { search.setType('search'); });
+				search.addEventListener(MouseEvent.CLICK, function(event:Event):void { searchOrders(); });
+				companySelector.addEventListener(Event.CHANGE, function(event:Event):void { searchOrders(); });
+
+
+				addEventListener(ShipmentNewEvent.SHIPMENT_NEW, handleShipmentNew);
+				addEventListener(ShipmentClickedEvent.SHIPMENT_CLICKED, handleShipmentClicked);
+				addEventListener(ShipmentPrintShippingLabelEvent.SHIPMENT_PRINT_SHIPPING_LABEL, function(event:ShipmentPrintShippingLabelEvent):void {
+					navigateToURL(new URLRequest("print_shipping_label.cfm?orderid=" + event.orderID), "_blank");	
+				});
+
+				
+				companySelector.selectedCompanyID = 0;
+
+				/*  We've been passed an order for which we need to create a new shipment.  */
+				if( FlexGlobals.topLevelApplication.parameters.orderID ) {
+					/*  Display only this order in the list  */
+					orderNumber.text = FlexGlobals.topLevelApplication.parameters.orderID;
+					
+					/*  Display the dialog for creating a shipment after the employees and shipments are loaded  */
+					BindingUtils.bindSetter(function(value:int):void {
+							if( value == 2 ) {
+								handleShipmentNew(new ShipmentNewEvent(ShipmentNewEvent.SHIPMENT_NEW, FlexGlobals.topLevelApplication.parameters.orderID));			
+							}
+						}, this, "dataLoaded");
+				}
+				
+				searchOrders();
+				orderInfo.getShippingMethods();
+				orderInfo.getEmployees();
+			}
+
+			
+			private function handleShipmentClicked(event:ShipmentClickedEvent):void {
+				var infoWindow:ShipmentDetails = PopUpManager.createPopUp(this, ShipmentDetails, true) as ShipmentDetails;
+				PopUpManager.centerPopUp( infoWindow );
+				infoWindow.setShipmentId( event.shipmentID );
+				
+				infoWindow.addEventListener("shipmentUpdated", function(ev:Event):void {
+					searchOrders();
+				}); 
+			}
+			
+			private function handleShipmentNew(event:ShipmentNewEvent):void {
+				var addWindow:ShipmentNew = PopUpManager.createPopUp(this, ShipmentNew, true) as ShipmentNew;
+				PopUpManager.centerPopUp(addWindow);
+				addWindow.setOrderId( event.OrderID );
+				
+				/*  Reload the orders  */
+				addWindow.addEventListener(ShipmentCreatedEvent.SHIPMENT_CREATED, function(ev:ShipmentCreatedEvent):void {
+					searchOrders();
+				});
+			}
+			
+			
+			private function searchOrders():void {
+				orders.search(type.selectedItem.data, orderNumber.text, dueDateStart.date.selectedDate,
+					dueDateEnd.date.selectedDate, companySelector.selectedCompanyID);
+			}
+			
+			
+			public function faultHandler(event:FaultEvent):void{
+				verifyAndRedirectIfSessionExpired( event );
+
+				trace(event.fault);
+				trace(event.message);
+				Alert.show((event.fault.faultDetail ? event.fault.faultDetail : event.fault.faultString), 'Error');
+			}
+			
+			
+			public function receiveOrders(event:ResultEvent):void{
+				Orders = convertToBindable( event.result as ArrayCollection );
+				search.setType("refresh");
+			}
+
+
+			private function receiveEmployees(event:ResultEvent):void{
+				LoggedInUserID  = event.result.LoggedInUserID;
+				isAdministrator = event.result.isAdministrator;
+				employees       = event.result.EMPLOYEES as ArrayCollection;
+				dataLoaded++;
+			}
+			
+
+			private function receiveShippingMethods(event:ResultEvent):void{
+				shippingMethods = convertToBindable( event.result as ArrayCollection );
+				dataLoaded++;
+			}
+
+			
+			private function dateLabel(item:Object, column:DataGridColumn):String {
+				return dateFormatter.format(item[column.dataField]);
+			}
+			
+			
+			/*  We need this function for DueDate because it's not correctely sorted as Date in all the cases  */
+            private function date_sortCompareFunc(itemA:Object, itemB:Object):int {
+                return ObjectUtil.dateCompare(itemA.DueDate, itemB.DueDate);
+            }
+		]]>
+	</mx:Script>
+
+
+	<mx:RemoteObject id="orders" showBusyCursor="true"
+		destination="ColdFusion"
+		source="{cfcRootPath}com.stairsupplies.ShippingService">
+		<mx:method name="search" result="receiveOrders(event)"/>		
+	</mx:RemoteObject>
+	<mx:RemoteObject id="orderInfo" showBusyCursor="true" destination="ColdFusion"
+		source="{cfcRootPath}com.stairsupplies.OrderInfo">
+		<mx:method name="getEmployees" result="receiveEmployees(event)"/>		
+		<mx:method name="getShippingMethods" result="receiveShippingMethods(event)"/>
+	</mx:RemoteObject>
+
+	
+	<mx:DateFormatter id="dateFormatter" formatString="{resourceManager.getString('FormattingValues', 'DATE_FORMAT')}"/>
+	
+	
+	<mx:VBox horizontalAlign="left" width="100%">
+		<mx:HBox>
+			<mx:LinkButton click="navigateToURL(new URLRequest('../../index.cfm'), '_blank');" label="Open Menu"/>	
+			<controls:CompanySelector id="companySelector"/>
+		</mx:HBox>
+	</mx:VBox>
+	
+
+	<mx:HBox width="100%" horizontalAlign="center" verticalAlign="middle">
+		<mx:ComboBox id="type" selectedIndex="1">
+			<mx:ArrayCollection>
+				<mx:Object label="All Orders" data="0"/>
+				<mx:Object label="Not Shipped Yet" data="1"/>
+				<mx:Object label="Only staged" data="2"/>
+			</mx:ArrayCollection>
+		</mx:ComboBox>
+		
+		<mx:Label text="with Due Date between "/>
+		<controls:DateFieldWithClear id="dueDateStart"/>
+		<mx:Label text=" and "/>
+		<controls:DateFieldWithClear id="dueDateEnd"/>
+
+		<mx:Label text="Order #"/>
+		<mx:TextInput id="orderNumber" styleName="orderNumber"/>
+		
+		<controls:ButtonSearchRefresh id="search"/>
+	</mx:HBox>
+
+
+	<mx:DataGrid id="ordersGrid" width="100%" height="100%" dataProvider="{Orders}" useRollOver="false">
+		<mx:columns>
+			<mx:DataGridColumn headerText="Order #" width="90" dataField="OrderNumber" itemRenderer="com.stairsupplies.shipping.RenderOrderNumber"/>
+			<mx:DataGridColumn headerText="Shipping Method" width="140" dataField="ShippingMethod"/>
+			<mx:DataGridColumn headerText="Est. Ship. ($)" width="90" dataField="estimated_shipping_cost" textAlign="right"/>
+			<mx:DataGridColumn headerText="Shipping Dir." dataField="ShippingDirections" showDataTips="true"/>
+			<mx:DataGridColumn headerText="Sales Person" width="140" dataField="EmployeeName"/>
+			<mx:DataGridColumn headerText="State" width="40" dataField="ShipState"/>
+			<mx:DataGridColumn headerText="In House Notes" dataField="In_House_Notes" headerStyleName="inHouseNotesColumn" color="#ff0000" showDataTips="true"/>
+			<mx:DataGridColumn headerText="Due Date" width="90" dataField="DueDate" sortCompareFunction="date_sortCompareFunc" labelFunction="dateLabel"/>
+			<mx:DataGridColumn headerText="Contact Info" width="200" dataField="contactInfo" dataTipField="contactInfo" showDataTips="true"/>
+			<mx:DataGridColumn headerText="Job Name" width="200" dataField="Job_Name" dataTipField="Job_Name" showDataTips="true"/>
+			<mx:DataGridColumn headerText="" width="160" itemRenderer="com.stairsupplies.shipping.RenderOrderOptions" sortable="false"/>
+		</mx:columns>
+	</mx:DataGrid>
+
+</mx:Application>

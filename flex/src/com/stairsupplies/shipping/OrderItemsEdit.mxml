@@ -1,0 +1,112 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mx:DataGrid xmlns:mx="http://www.adobe.com/2006/mxml"
+			width="100%" sortableColumns="false"
+			draggableColumns="false" useRollOver="false" editable="true"
+			creationComplete="init()">
+
+	<mx:Metadata>
+		[Event(name="productsValid", type="flash.events.Event")]
+		[Event(name="productsInvalid", type="flash.events.Event")]
+
+		[Event(name="overShipWarningOn", type="flash.events.Event")]
+		[Event(name="overShipWarningOff", type="flash.events.Event")]
+	</mx:Metadata>
+	
+
+	<mx:Script>
+		<![CDATA[
+		    private var _type:String = "add";
+
+		    [Inspectable(category="General", enumeration="add,edit", defaultValue="add")]
+		    public function get type():String
+		    {
+		        return _type;
+		    }
+		    public function set type(value:String):void
+		    {
+		        _type = value;
+		    }
+
+			private function init():void {
+				/**
+				 *   User changed quantity or box/skid number, validate the info
+				 */				
+				addEventListener("shipmentItemsChanged", function(ev:Event):void {
+					var totalQuantity:int        = 0;
+					var canSubmit:Boolean        = true;
+					var warnOverShipping:Boolean = false;
+					var quantityToShip:Number    = 0;
+					var QuantityOrdered:Number        = 0;
+					var qtyAlreadyShipped:Number = 0;
+					
+					for(var i:int = 0; i < dataProvider.length; i++) {
+
+						/*  Clear any previous errors  */
+						dataProvider[i].errorStringQuantity = "";
+						dataProvider[i].errorStringBoxSkid = "";
+						
+						if( dataProvider[i].quantityToShip != "" ) {
+
+
+							quantityToShip    = parseFloat(dataProvider[i].quantityToShip);
+							QuantityOrdered   = parseFloat(dataProvider[i].QuantityOrdered);
+							qtyAlreadyShipped = parseFloat(dataProvider[i].QuantityShipped) + (_type == "add" ? 0 : - dataProvider[i].quantityToShipOrig );
+							
+							if( isNaN( quantityToShip ) ) {
+
+								dataProvider[i].errorStringQuantity = "Please enter a number.";
+								canSubmit = false;
+
+							} else {
+								totalQuantity = totalQuantity + quantityToShip;
+
+								/*
+								 *  If the user entered a quantity for this item then dispatch a warning event if the shipped amount is greater than the ordered amount
+								 *  When adding a shipment we add to the previous shipped quantity 
+								 */
+								if( quantityToShip > 0 && ( qtyAlreadyShipped + quantityToShip > QuantityOrdered) ) {
+									warnOverShipping = true;
+								}
+							}
+
+							if( dataProvider[i].errorStringQuantity == "" && quantityToShip > 0 && (dataProvider[i].BoxSkidNumber == '' || dataProvider[i].BoxSkidNumber == null) ) {
+								dataProvider[i].errorStringBoxSkid = "Please enter the box/skid number.";
+								canSubmit = false;
+							}
+						}
+
+						/*  Data was updated (we update the error strings every time)  */
+						dataProvider.itemUpdated(dataProvider[i]);
+					}
+					
+					dispatchEvent(new Event( (canSubmit && totalQuantity != 0 ? "productsValid" : "productsInvalid") ) );
+
+					dispatchEvent(new Event( (warnOverShipping ? "overShipWarningOn" : "overShipWarningOff") ) );
+				});
+			} 
+		]]>
+	</mx:Script>
+
+	
+	<mx:columns>
+		<mx:DataGridColumn headerText="Order Qty" dataField="QuantityOrdered" width="70" textAlign="center" editable="false"/>
+		
+		<mx:DataGridColumn headerText="Prev. Shipped" dataField="QuantityShipped" width="100" textAlign="center" editable="false"/>
+		
+		<mx:DataGridColumn headerText="Ship Quantity" width="90" editable="true" rendererIsEditor="true"
+						itemRenderer="com.stairsupplies.shipping.RenderEditQuantity"
+						itemEditor="com.stairsupplies.shipping.RenderEditQuantity"/>
+						
+		<mx:DataGridColumn headerText="Skid #/Box #" width="140" editable="true" rendererIsEditor="true"
+						itemRenderer="com.stairsupplies.shipping.RenderEditSkidBox"
+						itemEditor="com.stairsupplies.shipping.RenderEditSkidBox"/>
+						
+		<mx:DataGridColumn headerText="In House Notes" width="280" dataField="In_House_Notes" headerStyleName="inHouseNotesColumn" color="#ff0000"
+						showDataTips="true" editable="false"/>
+
+		<mx:DataGridColumn headerText="Finish Option" dataField="finishOptionTitle" width="120" showDataTips="true" editable="false"/>
+		
+		<mx:DataGridColumn headerText="Product" width="300" editable="false"
+			 			itemRenderer="com.stairsupplies.shipping.RenderOrderItemName"/>
+	</mx:columns>
+</mx:DataGrid>

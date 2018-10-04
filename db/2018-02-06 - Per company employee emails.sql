@@ -1,0 +1,4 @@
+ALTER TABLE TblEmployee
+	CHANGE COLUMN `email` `EmailStairs` VARCHAR(50) NULL DEFAULT NULL,
+	ADD COLUMN `EmailViewrail` VARCHAR(50) NULL DEFAULT NULL AFTER `EmailStairs`
+;

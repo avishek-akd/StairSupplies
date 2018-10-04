@@ -1,0 +1,3 @@
+ALTER TABLE `TblOrdersBOM_Remakes`
+	ADD COLUMN `Archived` TINYINT NOT NULL DEFAULT '0' AFTER `d_name`
+;

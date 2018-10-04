@@ -1,0 +1,2 @@
+ALTER TABLE `TblOrdersBOM`
+	CHANGE COLUMN `DateFinal` `FinalDate` DATE NULL DEFAULT NULL AFTER `DueDate`;

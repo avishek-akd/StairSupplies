@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mx:DataGrid xmlns:mx="http://www.adobe.com/2006/mxml"
+			width="100%" sortableColumns="false" draggableColumns="false" useRollOver="false" rowCount="9" editable="false">
+	<mx:columns>
+		<mx:DataGridColumn headerText="Order Qty" dataField="QuantityOrdered" width="70" textAlign="center"/>
+		
+		<mx:DataGridColumn headerText="Prev. Shipped" dataField="QuantityShipped" width="90" textAlign="center"/>
+		
+		<mx:DataGridColumn headerText="Ship Quantity" width="90" dataField="quantityToShip" textAlign="center"/>
+						
+		<mx:DataGridColumn headerText="Skid #/Box #" width="140" dataField="BoxSkidNumber" textAlign="center"/>
+						
+		<mx:DataGridColumn headerText="In House Notes" dataField="In_House_Notes" width="100" headerStyleName="inHouseNotesColumn" color="#ff0000"
+						showDataTips="true"/>
+
+		<mx:DataGridColumn headerText="Finish Option" dataField="finishOptionTitle" showDataTips="true"/>
+		
+		<mx:DataGridColumn headerText="Product" width="300" itemRenderer="com.stairsupplies.shipping.RenderOrderItemName"/>
+	</mx:columns>
+</mx:DataGrid>

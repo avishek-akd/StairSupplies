@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project name="Minimize js for /sales/ area" default="all" basedir=".">
+	<target name="all" depends="jquery"/>
+
+
+    <property name="DEST"    value="../htdocs/sales/assets/" />
+    <property name="SRC_DIR" value="src" />
+
+
+	<target name="jquery">
+		<concat destfile="${DEST}/jquery.js">
+			<filelist files="${SRC_DIR}/jquery-3.2.1.js"></filelist>
+		</concat>
+
+		<antcall target="min">
+		    <param name="inputFile"  value="${DEST}/jquery.js"/>
+		    <param name="outputFile" value="${DEST}/jquery.min.js"/>
+		</antcall>
+
+		<echo message="jquery.js 3.2.1 built"/>
+	</target>
+
+
+	<target name="min">
+		<basename property="outputFileBasename" file="${outputFile}"/>
+		<basename property="inputFileBasename" file="${inputFile}"/>
+		<dirname property="outputDir" file="${outputFile}"/>
+
+		<java jar="google-compiler.jar" failonerror="true" fork="true" dir="${outputDir}">
+			<arg line="--warning_level QUIET --js ${inputFileBasename} --js_output_file ${outputFileBasename} --create_source_map ${outputFileBasename}.map --output_wrapper &quot;%output% &#10; //# sourceMappingURL=${outputFileBasename}.map&quot;"/>
+		</java>
+	</target>
+
+
+</project>

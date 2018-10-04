@@ -1,0 +1,1 @@
+ALTER TABLE `TblOrdersBOM`  CHANGE COLUMN `RemakeNotes` `RemakeNotes` VARCHAR(255) NULL DEFAULT NULL AFTER `Remake`;

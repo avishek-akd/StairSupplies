@@ -1,0 +1,2 @@
+ALTER TABLE `TblAudit`
+	ADD COLUMN `d_file` VARCHAR(100) NULL DEFAULT NULL AFTER `d_message`;

@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mx:Text xmlns:mx="http://www.adobe.com/2006/mxml" dataChange="handleDataChange(event)" height="31">
+	<!--
+		Force the height because Flex has a problem calculating the height when htmlText is involved
+	-->
+	<mx:Script>
+		<![CDATA[
+			private function ellipsisText(str:String, charactersToDisplay:int):String {
+				return (str.length > charactersToDisplay ? str.slice(0, charactersToDisplay + 1) + "..." : str);
+			} 	
+
+
+			private function handleDataChange(ev:Event):void {
+				htmlText = "<b>" + data.OrderItemName + "</b><br>" + ellipsisText(data.OrderItemDescription, 40);
+				toolTip = data.OrderItemDescription;
+			}
+		]]>
+	</mx:Script>
+</mx:Text>

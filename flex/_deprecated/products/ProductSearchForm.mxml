@@ -1,0 +1,210 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mx:VBox xmlns:mx="http://www.adobe.com/2006/mxml" width="100%" height="100%"
+		 creationComplete="init();" xmlns:stairsupplies="com.stairsupplies.*" xmlns:controls="com.stairsupplies.controls.*"
+		 xmlns:mxc="mxc.controls.*">
+
+
+	<mx:Metadata>
+		[Event(name="productEdit", type="com.stairsupplies.events.ProductEdit")]
+	</mx:Metadata>
+	
+	
+	<mx:Script>
+		<![CDATA[
+			import com.stairsupplies.events.ProductEditEvent;
+			import com.stairsupplies.model.ProductSearch;
+			
+			import mx.collections.ArrayCollection;
+			import mx.controls.Alert;
+			import mx.core.FlexGlobals;
+			import mx.rpc.events.ResultEvent;
+			import mx.validators.Validator;
+
+			
+			[Bindable] public var companies:ArrayCollection;
+			[Bindable] public var productTypes:ArrayCollection;
+			[Bindable] public var vendors:ArrayCollection;
+			[Bindable] public var materials:ArrayCollection;
+			[Bindable] public var unitOfMeasures:ArrayCollection;
+			
+			[Bindable] public var searchResults:ArrayCollection;
+			
+			
+			private function init():void {
+				searchButton.addEventListener(MouseEvent.CLICK, function(event:MouseEvent):void {
+					search();
+				});
+				downloadAsExcel.addEventListener(MouseEvent.CLICK, handleDownloadProducts);
+				downloadAsCSV.addEventListener(MouseEvent.CLICK, handleDownloadProducts);
+				downloadAsExcelWithMargin.addEventListener(MouseEvent.CLICK, handleDownloadProducts);
+
+				searchResultsDataGrid.addEventListener(MouseEvent.DOUBLE_CLICK, function(event:MouseEvent):void {
+					dispatchEvent(new ProductEditEvent( searchResultsDataGrid.selectedItem.ProductID ));
+				});
+				products.search.addEventListener("result", function (event:ResultEvent):void {
+					searchResults = event.result as ArrayCollection;
+					searchResultsDataGrid.visible = true;
+					downloadAsExcel.enabled = true;
+					downloadAsExcelWithMargin.enabled = true;
+					downloadAsCSV.enabled = true;
+				});
+				s_product_id.addEventListener(Event.CHANGE, updateButtonState);
+			}
+			
+		
+			public function updateButtonState(event:Event):void {
+				searchButton.enabled = (Validator.validateAll(validators).length == 0);
+			}
+			
+
+			public function search():void{
+				products.search( buildProductSearch() );
+			}
+
+
+			private function handleDownloadProducts(event:MouseEvent):void {
+				/* URL of the file to download. */
+				var fileUrl:String = FlexGlobals.topLevelApplication.pWebRoot + "/com/stairsupplies/ProductService.cfc?method="
+										+ (event.target.id == "downloadAsExcelWithMargin" ? "downloadWithMargin" : "download");
+				var fileFormat:String = (event.target.id == "downloadAsExcel" || event.target.id == "downloadAsExcelWithMargin" ? "xls" : "csv"); 
+				
+				fileUrl = fileUrl + '&CompanyID=' + companySelector.selectedCompanyID;
+				fileUrl = fileUrl + '&productionTypeID=' + String(productionTypeID.xcSelectedData == null ? [] : productionTypeID.xcSelectedData);
+				fileUrl = fileUrl + '&vendorID=' + String(vendorID.xcSelectedData == null ? [] : vendorID.xcSelectedData);
+				fileUrl = fileUrl + '&materialID=' + String(materialID.xcSelectedData == null ? [] : materialID.xcSelectedData);
+				fileUrl = fileUrl + '&keyword=' + s_keyword.text;
+				fileUrl = fileUrl + '&product_id=' + int(s_product_id.text);
+				fileUrl = fileUrl + '&WebsitePartName=' + s_website_part_name.text;
+				fileUrl = fileUrl + '&archived=' + s_archived.selected;
+				fileUrl = fileUrl + '&format=' + fileFormat;
+				
+				/* Set up the URL request to download the file specified by the FILE_URL variable. */
+				var urlReq:URLRequest = new URLRequest(fileUrl);
+				
+				var fileRef:FileReference = new FileReference();
+				fileRef.addEventListener(Event.COMPLETE, function(event:Event):void {
+					Alert.show('Download complete !');
+				});
+				fileRef.addEventListener(IOErrorEvent.IO_ERROR, function(event:IOErrorEvent):void {
+					Alert.show('Error downloading file !');
+				});
+				fileRef.addEventListener(IOErrorEvent.NETWORK_ERROR, function(event:IOErrorEvent):void {
+					Alert.show('Network error while downloading file !');
+				});
+				
+				fileRef.download(urlReq, "products-download." + fileFormat);
+			}
+
+			
+			private function buildProductSearch():ProductSearch {
+				var result:ProductSearch = new ProductSearch();
+
+				//trace( productionTypeID.selectedItems );
+				
+				result.productionTypeID  = productionTypeID.xcSelectedData == null ? [] : productionTypeID.xcSelectedData;
+				result.vendorID          = vendorID.xcSelectedData == null ? [] : vendorID.xcSelectedData;
+				result.materialID        = materialID.xcSelectedData == null ? [] : materialID.xcSelectedData;
+				result.keyword           = s_keyword.text;
+				result.archived          = s_archived.selected;
+				result.product_id        = int(s_product_id.text);
+				result.CompanyID         = companySelector.selectedCompanyID;
+				result.WebsitePartName   = s_website_part_name.text; 
+
+				return result;
+			}
+		]]>
+	</mx:Script>
+	
+	
+	<mx:RemoteObject id="products" showBusyCursor="true" destination="ColdFusion"
+					 source="{FlexGlobals.topLevelApplication.cfcRootPath}com.stairsupplies.ProductService">
+		<mx:method name="search"/>
+	</mx:RemoteObject>
+	
+	
+	<mx:Array id="validators">
+		<mx:NumberValidator source="{s_product_id}" property="text" required="false"/>	
+	</mx:Array>
+	
+	
+	<mx:Form width="100%" height="100%">
+		<mx:Grid>
+			<mx:GridRow width="100%" height="100%">
+				<mx:GridItem width="100%" height="100%">
+					<mx:Label text="Company"/>
+				</mx:GridItem>
+				<mx:GridItem width="100%" height="100%">
+					<controls:CompanySelector id="companySelector"/>
+				</mx:GridItem>
+				<mx:GridItem width="100%" height="100%">
+					<mx:Label text="Product ID"/>
+				</mx:GridItem>
+				<mx:GridItem width="100%" height="100%">
+					<mx:TextInput id="s_product_id" />
+				</mx:GridItem>
+			</mx:GridRow>
+			<mx:GridRow width="100%" height="100%">
+				<mx:GridItem width="100%" height="100%">
+					<mx:Label text="Production Type"/>
+				</mx:GridItem>
+				<mx:GridItem width="100%" height="100%">
+					<mxc:MultiSelectComboBox id="productionTypeID" prompt="All" dataProvider="{productTypes}"/>
+				</mx:GridItem>
+				<mx:GridItem width="100%" height="100%">
+					<mx:Label text="Keyword"/>
+				</mx:GridItem>
+				<mx:GridItem width="100%" height="100%">
+					<mx:TextInput id="s_keyword" />
+				</mx:GridItem>
+			</mx:GridRow>
+			<mx:GridRow width="100%" height="100%">
+				<mx:GridItem width="100%" height="100%">
+					<mx:Label text="Material"/>
+				</mx:GridItem>
+				<mx:GridItem width="100%" height="100%">
+					<mxc:MultiSelectComboBox id="materialID" dataProvider="{materials}" prompt="All"/>
+				</mx:GridItem>
+				<mx:GridItem width="100%" height="100%">
+					<mx:Label text="Website Part Name"/>
+				</mx:GridItem>
+				<mx:GridItem width="100%" height="100%">
+					<mx:TextInput id="s_website_part_name" />
+				</mx:GridItem>
+			</mx:GridRow>
+			<mx:GridRow width="100%" height="100%">
+				<mx:GridItem width="100%" height="100%">
+					<mx:Label text="Vendor"/>
+				</mx:GridItem>
+				<mx:GridItem width="100%" height="100%">
+					<mxc:MultiSelectComboBox id="vendorID" dataProvider="{vendors}" prompt="All"/>
+				</mx:GridItem>
+				<mx:GridItem width="100%" height="100%">
+					<mx:Label text="Archived"/>
+				</mx:GridItem>
+				<mx:GridItem width="100%" height="100%">
+					<mx:CheckBox id="s_archived" />
+				</mx:GridItem>
+			</mx:GridRow>
+			<mx:GridRow width="100%" height="100%">
+				<mx:GridItem width="100%" height="100%" colSpan="2">
+					<mx:Button id="searchButton" label="Search" icon="@Embed(source='assets/search.png')"/>
+					<mx:Button id="downloadAsCSV" label="Download CSV" icon="@Embed(source='assets/csv.png')" enabled="false"/>
+					<mx:Button id="downloadAsExcel" label="Download Excel" icon="@Embed(source='assets/excel.png')" enabled="false"/>
+					<mx:Button id="downloadAsExcelWithMargin" label="Download Excel w/ margin" icon="@Embed(source='assets/excel.png')" enabled="false"/>
+				</mx:GridItem>
+			</mx:GridRow>
+		</mx:Grid>
+		
+		<mx:DataGrid id="searchResultsDataGrid" dataProvider="{searchResults}" doubleClickEnabled="true"
+					 width="100%" height="100%" visible="false" rowCount="13">
+			<mx:columns>
+				<mx:Array>
+					<mx:DataGridColumn headerText="Id" dataField="ProductID" width="70" />
+					<mx:DataGridColumn headerText="Name" dataField="ProductName"/>
+					<mx:DataGridColumn headerText="Description" dataField="ProductDescription"/>
+				</mx:Array>
+			</mx:columns>
+		</mx:DataGrid>
+	</mx:Form>
+	
+</mx:VBox>

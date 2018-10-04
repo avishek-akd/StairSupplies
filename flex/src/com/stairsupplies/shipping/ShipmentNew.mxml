@@ -1,0 +1,514 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mx:TitleWindow xmlns:mx="http://www.adobe.com/2006/mxml" xmlns:controls="com.stairsupplies.controls.*" xmlns:shipping="com.stairsupplies.shipping.*"
+		layout="vertical" width="1100" height="585" borderAlpha="1" showCloseButton="true"
+		close="PopUpManager.removePopUp(this);" creationComplete="init();">
+
+	<mx:Script>
+		<![CDATA[
+			import com.stairsupplies.events.ShipmentCreatedEvent;
+			
+			import mx.collections.ArrayCollection;
+			import mx.controls.Alert;
+			import mx.core.FlexGlobals;
+			import mx.events.CloseEvent;
+			import mx.events.ValidationResultEvent;
+			import mx.managers.PopUpManager;
+			import mx.rpc.events.FaultEvent;
+			import mx.rpc.events.ResultEvent;
+			import mx.utils.ObjectProxy;
+			import mx.validators.Validator;
+			
+			[Bindable]
+			private var _order:ObjectProxy;
+			[Bindable]
+			private var _orderItems:ArrayCollection = new ArrayCollection();
+
+			
+			public function setOrderId( orderId:int ):void {
+				title = "Create Shipment for Order " + orderId.toString();
+
+				shippingService.getOrderAndItems( orderId );
+			}
+			
+			
+			private function init():void {
+				shippingService.addEventListener(FaultEvent.FAULT, FlexGlobals.topLevelApplication.faultHandler);
+
+
+				/*  Continue to next step after validating the current info  */
+				continueToItems.addEventListener(MouseEvent.CLICK, handleContinueToItems);
+				tracking_number.addEventListener("enter", handleContinueToItems);
+				actualShippingCosts.addEventListener("enter", handleContinueToItems);
+				
+				
+				/*  Items tab  */
+				back.addEventListener(MouseEvent.CLICK, function(event:MouseEvent):void {
+					actualShippingCosts.text = actualShippingCosts2.text;
+					steps.selectedIndex = 0;
+				});
+				itemsInShipment.addEventListener("enter", function(ev:Event):void{
+					createShippedShipment();
+				});
+				itemsInShipment.addEventListener("productsValid", function(ev:Event):void {
+					btnShipShipment.enabled     = true;
+					btnStageShipment.enabled    = true;
+					btnShipShipment.errorString = "";
+				});			
+				itemsInShipment.addEventListener("productsInvalid", function(ev:Event):void {
+					btnShipShipment.enabled     = false;
+					btnStageShipment.enabled    = false;
+					btnShipShipment.errorString = "The shipment must include at least 1 item.";
+				});		
+				itemsInShipment.addEventListener("overShipWarningOn", function(ev:Event):void {
+					overShipWarning.show("Shipped quantity is higher than ordered quantity.");
+				});			
+				itemsInShipment.addEventListener("overShipWarningOff", function(ev:Event):void {
+					overShipWarning.hide();
+				});	
+				btnShipShipment.addEventListener(MouseEvent.CLICK, function(event:MouseEvent):void {
+					createShippedShipment();
+				});
+				btnStageShipment.addEventListener(MouseEvent.CLICK, function(event:MouseEvent):void {
+					createStagedShipment();
+				});
+				copyAddressToClipboard.addEventListener(MouseEvent.CLICK, function(event:MouseEvent):void {
+					System.setClipboard((_order.ShipAddress1 ? _order.ShipAddress1 + "\n" : '')
+											+ (_order.ShipAddress2 ? _order.ShipAddress2 + "\n" : '')
+											+ (_order.ShipAddress3 ? _order.ShipAddress3 + "\n" : '')
+											+ _order.ShipCity + ", " + _order.ShipState + " " + _order.ShipPostalCode
+					);
+				});
+				copyZipToClipboard.addEventListener(MouseEvent.CLICK, function(event:MouseEvent):void {
+					System.setClipboard( _order.ShipPostalCode );
+				});
+			}
+
+			
+			private function handleContinueToItems(ev:Event):void {
+				var errors:Array = Validator.validateAll( validators );
+				var firstStepValid:Boolean = ! errors.length;
+				
+				(steps.getChildAt(1) as VBox).enabled = firstStepValid;
+				
+				if( firstStepValid ) {
+
+					actualShippingCosts2.text = actualShippingCosts.text;
+					/*  Validation ok, go to next step  */
+					steps.selectedIndex = 1;
+				
+				} else {
+				
+					/*  Set focus and force the error message to be displayed for the first field with error  */
+					(errors[0] as ValidationResultEvent).target.source.setFocus();
+					(errors[0] as ValidationResultEvent).target.source.dispatchEvent(new MouseEvent(MouseEvent.MOUSE_OVER));
+				
+				}
+			}		
+
+
+			/*  Return an array with the products that the user wants to ship (the quantity is greather than zero)  */
+			private function productsToShip():Array {
+				var result:Array = new Array();
+				
+				for(var i:int = 0; i < _orderItems.length; i++) {
+					if( _orderItems[i].quantityToShip > 0 ) {
+						result.push(
+							{OrderItemsID:_orderItems[i].OrderItemsID,
+							quantityToShip:_orderItems[i].quantityToShip,
+							BoxSkidNumber:_orderItems[i].BoxSkidNumber}
+						);	
+					}
+				}
+				
+				return result;
+			}
+			
+			
+			private function createShippedShipment():void {
+				if( ! btnShipShipment.enabled ) {
+					return;
+				}
+				
+				checkProductSelection( sendRequestShipShipment );
+			}	
+			
+			
+			private function createStagedShipment():void {
+				if( ! btnStageShipment.enabled ) {
+					return;
+				}
+				
+				checkProductSelection( sendRequestStageShipment );
+			}
+			
+			
+			private function checkProductSelection(continueFunction:Function):void {
+				var failedProducts1:Array = new Array(),
+					failedProducts2:Array = new Array(),
+					failedProducts3:Array = new Array(),
+					alertMessage:String = "",
+					showBackorderButton:Boolean = false;
+			
+				for(var i:int = 0; i < _orderItems.length; i++) {
+					/*  Warning for products that should be marked PRC/Started/Final  */
+					if( _orderItems[i].quantityToShip > 0 && _orderItems[i].showPRCFinalWarning == 1 ) {
+						failedProducts1.push(_orderItems[i].OrderItemName);
+					}
+
+					if( _orderItems[i].quantityToShip == 0 ) {
+						failedProducts2.push(_orderItems[i].OrderItemName);
+					}
+					
+					if( _orderItems[i].quantityToShip > 0 && _orderItems[i].quantityToShip < (_orderItems[i].QuantityOrdered - _orderItems[i].QuantityShipped) ) {
+						failedProducts3.push(_orderItems[i].OrderItemName);
+					}
+				}
+				
+				if( failedProducts1.length || failedProducts2.length || failedProducts3.length ) {
+					if( failedProducts1.length ) {
+						alertMessage = "The following products should have PRC/Started and Final set :\n    ".toUpperCase() + failedProducts1.join("\n    ");
+					}
+					if( failedProducts2.length ) {
+						alertMessage = alertMessage + (alertMessage.length ? "\n\n" : "") + "The following products are not included in the shipment :\n    ".toUpperCase() + failedProducts2.join("\n    ");
+						showBackorderButton = true;
+					}
+					if( failedProducts3.length ) {
+						alertMessage = alertMessage + (alertMessage.length ? "\n\n" : "") + "The following products are not fully shipped :\n    ".toUpperCase() + failedProducts3.join("\n    ");
+					}
+
+					var confirmation:TileWindowConfimation = PopUpManager.createPopUp(this, TileWindowConfimation, true) as TileWindowConfimation;
+					confirmation.title = "Are you sure you want to continue ?";
+					PopUpManager.centerPopUp(confirmation);
+					confirmation.abc.text = alertMessage;
+					confirmation.backorderButton.visible = showBackorderButton;
+					confirmation.backorderButton.includeInLayout = showBackorderButton;
+					confirmation.addEventListener("clickYes", function(event:Event):void {
+						continueFunction( false );
+					});
+					confirmation.addEventListener("clickYesAndBackorder", function(event:Event):void {
+						continueFunction( true );
+					}); 
+				} else {
+					continueFunction( false );
+				}
+			}
+			
+
+			private function sendRequestShipShipment(backorder:Boolean):void {
+				var products:Array = productsToShip();
+				/*  Validate shipping costs only when actually shipping  */
+				var errors:Array = Validator.validateAll( validatorsStep2 );
+
+				if( ! errors.length ) {
+						btnShipShipment.enabled  = false;
+						btnStageShipment.enabled = false;
+						shippingService.createShippedShipment(_order.OrderID, pulled_by_id.employeeID, packaged_by_id.employeeID, processed_by_id.employeeID,
+							shipping_method.selectedItem.ShippingMethodID,
+							shippingDirections.text, tracking_number.text, estimatedArrivalDate.date.selectedDate,
+							actualShippingCosts2.text, sendEmail.selected, backorder, products,
+							shipment_image.getFileName(),
+							shipment_image.getFileContent(),
+							in_house_image.getFileName(),
+							in_house_image.getFileContent()
+						);
+				}
+			}
+			
+			
+			private function sendRequestStageShipment(backorder:Boolean):void {
+				var products:Array = productsToShip();
+				
+				btnShipShipment.enabled  = false;
+				btnStageShipment.enabled = false;
+				shippingService.createStagedShipment(_order.OrderID, pulled_by_id.employeeID, packaged_by_id.employeeID, processed_by_id.employeeID,
+					shipping_method.selectedItem.ShippingMethodID,
+					shippingDirections.text, tracking_number.text, estimatedArrivalDate.date.selectedDate,
+					actualShippingCosts2.text, sendEmail.selected, backorder, products,
+					shipment_image.getFileName(),
+					shipment_image.getFileContent(),
+					in_house_image.getFileName(),
+					in_house_image.getFileContent()
+				);
+			}
+			
+			
+			private function formatShippingAddress(order:ObjectProxy):String {
+				return order.ShipCompanyName + "<br>"
+					+ order.ShipContactFirstName + " " + order.ShipContactLastName + "<br>"
+					+ (order.ShipAddress1 ? order.ShipAddress1 + "<br>" : '')
+					+ (order.ShipAddress2 ? order.ShipAddress2 + "<br>" : '')
+					+ (order.ShipAddress3 ? order.ShipAddress3 + "<br>" : '')
+					+ order.ShipCity + ", " + order.ShipState + " " + order.ShipPostalCode + "<br>"
+					+ (order.ShipPhoneNumber ? "Phone: " + order.ShipPhoneNumber + "<br>" : '')
+					+ (order.ShipFaxNumber ? "Fax: " + order.ShipFaxNumber + "<br>" : '')
+					+ (order.ShipCellPhone ? "Cell: " + order.ShipCellPhone + "<br>" : '');
+			}
+			
+			
+			private function receiveOrderInfo(event:ResultEvent):void{
+				_order      = new ObjectProxy(event.result.order[0]);
+				_orderItems = FlexGlobals.topLevelApplication.addErrorFields(event.result.orderItems);
+
+				shipToAddress.htmlText = formatShippingAddress( _order );
+	
+				title = "Create Shipment for Order " + _order.OrderNumber.toString();
+
+				/*  Preselect Shipping Method  */
+				if( _order.ShippingMethodID is Number ) {
+					shipping_method.selectedValue = _order.ShippingMethodID;
+				}
+									
+				if( _order.CreditHold == 1 ) {
+					customerCreditHold.text = 'Customer Credit HOLD. See Sales before proceeding.';
+					customerCreditHold.visible = true;
+					customerCreditHold.includeInLayout = true;
+				}
+				
+				if( _order.showPaymentWarning == 1 ) {
+					warningPartiallyPaidText.text = "Please speak to someone in the office about getting this charged before shipping.";
+					warningPartiallyPaid.visible = true;
+					warningPartiallyPaid.includeInLayout = true;
+					continueToItems.visible = false;
+					continueToItems.includeInLayout = false;
+				}
+				
+				steps.enabled = true;
+			}
+
+
+			/**
+			 *  Callback executed when a shipment is created (either shipped or staged)
+			 */
+			private function shipmentCreated(event:ResultEvent):void{
+				var shipmentId:int        = event.result.shipmentID;    /*  e.g. 100  */
+				var shipmentNumber:String = event.result.shipmentNumber;/*  e.g. 28000-A  */
+				var isShipped:int         = event.result.isShipped;     
+
+
+				btnShipShipment.visible = false;
+				btnShipShipment.includeInLayout = false;
+				btnStageShipment.visible = false;
+				btnStageShipment.includeInLayout = false;
+
+
+				copyToClipboard.visible = true;
+				copyToClipboard.includeInLayout = true;
+				copyToClipboard.label = "Copy " + shipmentNumber + " to Clipboard";
+				
+				printPackingList.visible = true;
+				printPackingList.includeInLayout = true;
+				printPackingList.addEventListener(MouseEvent.CLICK, function(ev:Event):void {
+					navigateToURL(new URLRequest("print_shipment_packing_list.cfm?OrderShipment_id=" + shipmentId), "_blank");	
+				});
+				
+				if( isShipped == 0  ) {
+					btnShipStagedShipment.visible = true;
+					btnShipStagedShipment.includeInLayout = true;
+					btnShipStagedShipment.addEventListener(MouseEvent.CLICK, function(event:MouseEvent):void {
+						/*  Validate shipping costs only when actually shipping  */
+						var errors:Array = Validator.validateAll( validatorsStep2 );
+						
+						if( errors.length )
+							return;
+
+						shippingService.shipStagedShipment(shipmentId, actualShippingCosts2.text);
+						(event.target as Button).enabled = false;
+
+						/*  We changed the STAGED status of a shipment and this needs to be reflected in the interface  */
+						dispatchEvent(new ShipmentCreatedEvent(ShipmentCreatedEvent.SHIPMENT_CREATED, _order.OrderID));
+					});
+				}
+				
+				/*  Alow the user to send an email after the shipment is created. This delay is to allow FedEx
+				 * to generate and update the tracking number for this shipment
+				 */
+				if(! sendEmail.selected) {
+					emailPackingList.visible = true;
+					emailPackingList.includeInLayout = true;
+					emailPackingList.addEventListener(MouseEvent.CLICK, function(event:MouseEvent):void {
+						shippingService.shipmentSendEmailToCustomer( shipmentId );
+						(event.target as Button).enabled = false;
+					});
+				}
+				copyToClipboard.addEventListener(MouseEvent.CLICK, function(event:MouseEvent):void {
+					System.setClipboard( shipmentNumber );
+				});
+
+
+				/*  Shipment created ok, dispatch notification  */
+				dispatchEvent(new ShipmentCreatedEvent(ShipmentCreatedEvent.SHIPMENT_CREATED, _order.OrderID));
+			}
+		]]>
+	</mx:Script>
+
+	
+	<mx:RemoteObject id="shippingService" showBusyCursor="true" destination="ColdFusion"
+					 source="{FlexGlobals.topLevelApplication.cfcRootPath}com.stairsupplies.ShippingService">
+		<mx:method name="getOrderAndItems" result="receiveOrderInfo(event)"/>		
+		
+		<mx:method name="createShippedShipment" result="shipmentCreated(event)"/>
+		<mx:method name="createStagedShipment" result="shipmentCreated(event)"/>
+		<mx:method name="shipStagedShipment"/>
+	</mx:RemoteObject>
+	
+	
+	<mx:DateFormatter id="dateFormatter" formatString="{resourceManager.getString('FormattingValues', 'DATE_FORMAT')}"/>
+
+
+	<mx:Array id="validators">
+		<mx:NumberValidator source="{pulled_by_id}"    required="true" property="employeeID" minValue="1" lowerThanMinError="Employee not found" requiredFieldError="Employee Code required" listener="{pulled_by_id.employeeCodeInput}"/>
+		<mx:NumberValidator source="{packaged_by_id}"  required="true" property="employeeID" minValue="1" lowerThanMinError="Employee not found" requiredFieldError="Employee Code required" listener="{packaged_by_id.employeeCodeInput}"/>
+		<mx:NumberValidator source="{processed_by_id}" required="true" property="employeeID" minValue="1" lowerThanMinError="Employee not found" requiredFieldError="Employee Code required" listener="{processed_by_id.employeeCodeInput}"/>
+
+		<mx:StringValidator source="{tracking_number}" property="text"
+							maxLength="150" required="{shipping_method.selectedItem.TrackingNumberRequired}"/>
+		<mx:DateValidator source="{estimatedArrivalDate.date}" property="selectedDate"
+							required="{shipping_method.selectedItem.EstimatedArrivalDateRequired}"/>
+		<mx:StringValidator source="{shipment_image}" property="fileName" 
+							maxLength="100" required="{shipping_method.selectedItem.TrackingNumberRequired}"/>
+		<mx:NumberValidator source="{actualShippingCosts}" property="text"
+							required="{shipping_method.selectedItem.TrackingNumberRequired}"/>
+	</mx:Array>
+	<mx:Array id="validatorsStep2">
+		<mx:NumberValidator source="{actualShippingCosts2}" property="text" required="true"/>
+	</mx:Array>
+
+
+	<mx:ViewStack id="steps" width="100%" height="100%" enabled="false" creationPolicy="all">
+		<mx:VBox width="100%">
+			<mx:Text id="customerCreditHold" visible="false" includeInLayout="false" fontSize="18" color="red"></mx:Text>
+
+			<mx:HBox>
+				<mx:Form>
+					<mx:FormItem label="">
+						<mx:CheckBox id="sendEmail" label="Send email to customer with shipment details" selected="true"/>
+					</mx:FormItem>
+					<mx:FormItem label="Pulled by" required="true">
+						<shipping:InputEmployee id="pulled_by_id" employees="{FlexGlobals.topLevelApplication.employees}"/>
+					</mx:FormItem>
+					<mx:FormItem label="Packaged by" required="true">
+						<shipping:InputEmployee id="packaged_by_id" employees="{FlexGlobals.topLevelApplication.employees}"/>
+					</mx:FormItem>
+					<mx:FormItem label="Processed by" required="true">
+						<shipping:InputEmployee id="processed_by_id" employees="{FlexGlobals.topLevelApplication.employees}"/>
+					</mx:FormItem>
+					<mx:FormItem label="Shipping Method">
+						<controls:VBComboBox id="shipping_method" dataProvider="{FlexGlobals.topLevelApplication.shippingMethods}"
+									dataProperty="ShippingMethodID" labelField="ShippingMethod"></controls:VBComboBox>
+					</mx:FormItem>
+					<mx:FormItem label="Tracking Number" required="{shipping_method.selectedItem.TrackingNumberRequired}">
+						<mx:TextInput id="tracking_number"/>
+					</mx:FormItem>
+					<mx:FormItem label="Estimated Arrival Date" required="{shipping_method.selectedItem.EstimatedArrivalDateRequired}">
+						<controls:DateFieldWithClear id="estimatedArrivalDate"/>
+					</mx:FormItem>
+					<mx:FormItem label="Shipment Image">
+						<mx:HBox>
+							<controls:ImageUpload id="shipment_image"/>
+							<mx:FormItem label="In House Image">
+								<controls:ImageUpload id="in_house_image"/>
+							</mx:FormItem>
+						</mx:HBox>
+					</mx:FormItem>
+					<mx:FormItem label="Actual Shipping Cost ($)">
+						<mx:TextInput id="actualShippingCosts" text="{_order.actualShippingCosts}" maxChars="7" textAlign="right"/>
+					</mx:FormItem>
+					<mx:FormItem label="Shipping Instructions">
+						<mx:TextArea id="shippingDirections" styleName="shippingDirections" text="{_order.ShippingDirections}" width="300" height="150"/>
+					</mx:FormItem>
+				</mx:Form>
+	
+				<mx:VRule height="50%"/>
+	
+				<mx:VBox width="100%">
+					<mx:Form height="100%" width="50%">
+						<mx:FormItem label="Order:">
+							<mx:Text text="{_order.OrderNumber}"/>
+						</mx:FormItem>
+						<mx:FormItem label="Due Date:">
+							<mx:Text text="{dateFormatter.format(_order.DueDate)}"/>
+						</mx:FormItem>
+						<mx:FormItem label="Job name:">
+							<mx:Text text="{_order.Job_Name}"/>
+						</mx:FormItem>
+						<mx:FormItem label="Ship to:">
+							<mx:Text id="shipToAddress" htmlText=""/>
+						</mx:FormItem>
+						<mx:FormItem>
+							<mx:HBox>
+								<mx:Button id="copyAddressToClipboard" styleName="copyToClipboard" label="Copy Address"/>
+								<mx:Button id="copyZipToClipboard" styleName="copyToClipboard" label="Copy Zip"/>
+							</mx:HBox>
+						</mx:FormItem>
+						<mx:FormItem label="Freight charge ($):">
+							<mx:Text text="{_order.FreightCharge}"/>
+						</mx:FormItem>
+						<mx:FormItem label="Priority Notes:">
+							<mx:Text text="{_order.Priority_Production_Notes}"/>
+						</mx:FormItem>
+						<mx:FormItem label="Secondary Notes:">
+							<mx:Text text="{_order.Secondary_Production_Notes}"/>
+						</mx:FormItem>
+					</mx:Form>
+				</mx:VBox>
+			</mx:HBox>
+
+			<mx:Spacer height="100%"/>
+			<mx:HRule width="100%"/>
+			
+			<mx:HBox horizontalAlign="right" width="100%">
+				<mx:HBox id="warningPartiallyPaid" includeInLayout="false" visible="false" width="100%" styleName="warningBox">
+					<mx:Text id="warningPartiallyPaidText" text="" paddingLeft="10" paddingTop="0"/>	
+				</mx:HBox>
+				<controls:ButtonWithKeyboard id="continueToItems" styleName="continueButton" label="Items on Shipment"/>
+			</mx:HBox>
+		</mx:VBox>
+
+
+		<mx:VBox>
+			<mx:HBox width="100%">
+				<mx:Form width="50%" paddingBottom="2">
+					<mx:FormItem label="Shipping Method:">
+							<mx:Text text="{shipping_method.selectedItem.ShippingMethod}"/>
+					</mx:FormItem>
+					<mx:FormItem label="In House Notes:" width="100%">
+						<mx:Text text="{_order.In_House_Notes}" width="100%" styleName="inHouseNotes"/>
+					</mx:FormItem>
+				</mx:Form>
+				<mx:Form paddingBottom="2">
+					<mx:FormItem label="Freight charge ($):">
+							<mx:Text text="{_order.FreightCharge}"/>
+					</mx:FormItem>
+				</mx:Form>
+			</mx:HBox>
+
+			<mx:Spacer height="100%"/>
+
+			<shipping:OrderItemsEdit id="itemsInShipment" dataProvider="{_orderItems}" type="add" rowCount="10"/>
+
+			<mx:HBox width="100%" textAlign="right" verticalAlign="middle">
+				<controls:WarningBox id="overShipWarning"/>
+				<mx:Label text="Actual Shipping Cost ($)"/>
+				<mx:TextInput id="actualShippingCosts2" text="" maxChars="5" textAlign="right" paddingRight="10"/>
+			</mx:HBox>
+
+			<mx:HRule width="100%"/>
+
+			<mx:HBox horizontalAlign="right" width="100%">
+				<controls:ButtonWithKeyboard id="back" styleName="backButton" label="Shipment Information"/>
+
+				<mx:Spacer width="100%"/>
+
+				<mx:Button id="printPackingList" visible="false" includeInLayout="false" label="Print Packing List" icon="@Embed(source='assets/print.png')"/>
+				<mx:Button id="copyToClipboard"  visible="false" includeInLayout="false" styleName="copyToClipboard"/>
+				<mx:Button id="emailPackingList" visible="false" includeInLayout="false" styleName="emailPackingList" label="Email Packing List"/>
+
+				<controls:ButtonWithKeyboard id="btnShipStagedShipment" visible="false" includeInLayout="false" label="Ship Shipment" styleName="shipShipment" />
+				<controls:ButtonWithKeyboard id="btnStageShipment" label="Stage Shipment" styleName="stageShipment" enabled="false"/>
+				<controls:ButtonWithKeyboard id="btnShipShipment" label="Ship Shipment" styleName="shipShipment" enabled="false"/>
+			</mx:HBox>
+		</mx:VBox>
+
+	</mx:ViewStack>
+	
+</mx:TitleWindow>

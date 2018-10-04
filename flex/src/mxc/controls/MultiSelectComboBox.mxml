@@ -1,0 +1,126 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mx:ComboBox 
+			 open="dropdown.selectedItems = _selectedItems;"
+			 dataProvider="{_xcListData}" 
+			 keyDown="keyDown(event)" 
+			 keyUp="keyUp(event)" 
+			 xmlns:mx="http://www.adobe.com/2006/mxml">
+	<mx:Script>
+		<![CDATA[
+/**
+			 	Copyright (c) 2010 Evan Delodder
+
+				This program is free software: you can redistribute it and/or modify
+			    it under the terms of the GNU General Public License as published by
+			    the Free Software Foundation, either version 3 of the License, or
+			    (at your option) any later version.
+			
+			    This program is distributed in the hope that it will be useful,
+			    but WITHOUT ANY WARRANTY; without even the implied warranty of
+			    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+			    GNU General Public License for more details.
+			
+			    You should have received a copy of the GNU General Public License
+			    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+			**/
+
+			import mx.events.DropdownEvent;
+			import mx.events.ListEvent;
+			import mx.collections.ArrayCollection;
+			
+
+			//True/False based on the whether user is holding control key for multiselect
+			private var _selecting:Boolean = false;
+			//Collection of selected items from the list
+			private var _selectedItems:Array = new Array();
+			
+			/**
+			 * Overall control color
+			 * **/
+			public function set xcColor(value:Number):void
+			{
+				setStyle("color", value);
+			}
+			public function get xcColor():Number
+			{
+				return getStyle("color");
+			}
+			
+			/**
+			 * Build the internal dataprovider based on the Array coming from Xcelsius. 
+			 * **/
+			[Bindable]private var _xcListData:ArrayCollection = new ArrayCollection();
+			public function set xcListData(value:Array):void
+			{
+				_xcListData.removeAll();
+				for(var i:int=0;i<value.length;i++)
+				{
+					_xcListData.addItem({label: value[i], data: value[i]});
+				}
+			}
+			public function get xcListData():Array
+			{
+				return [];
+			}
+			
+			
+			/**
+			 * Build the selected data/destination data for Xcelsius. 
+			 * **/
+			private var _xcSelectedData:Array = new Array();
+			[Bindable(event="xcSelectedData")]
+			public function set xcSelectedData(value:Array):void
+			{
+				_xcSelectedData = new Array();
+				for(var i:int=0;i<_selectedItems.length;i++)
+				{
+					_xcSelectedData.push(_selectedItems[i].data);
+				}
+				dispatchEvent(new Event("xcSelectedData"));
+			}
+			public function get xcSelectedData():Array
+			{
+				return _xcSelectedData;
+			}
+			
+		
+			/**
+			 * Overriden to allow multiselect
+			 * **/
+			override public function close(trigger:Event=null) : void
+			{
+				if (!_selecting)
+				{
+					_selectedItems = new Array();
+					_selectedItems = dropdown.selectedItems;
+					xcSelectedData = dropdown.selectedItems;
+					super.close(trigger);
+				}
+			}
+			
+			
+			/**
+			 * See if the user is holding down the control key
+			 * **/
+			private function keyDown(event:KeyboardEvent) : void
+			{
+				_selecting = event.ctrlKey;
+				dropdown.allowMultipleSelection = _selecting;
+			}
+
+			/**
+			 * See if the user is releasing the control key
+			 * **/
+			private function keyUp(event:KeyboardEvent) : void
+			{
+				_selecting = event.ctrlKey;
+				if (!_selecting)
+				{
+					close();
+					dispatchEvent(new ListEvent(ListEvent.CHANGE));
+				}
+			}
+	
+		]]>
+	</mx:Script>
+</mx:ComboBox>

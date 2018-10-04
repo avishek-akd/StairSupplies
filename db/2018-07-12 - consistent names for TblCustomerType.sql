@@ -1,0 +1,7 @@
+ALTER TABLE `TblCustomerType`
+	ALTER `TypeName` DROP DEFAULT
+;
+ALTER TABLE `TblCustomerType`
+	CHANGE COLUMN `id` `CustomerTypeID` INT(10) UNSIGNED NOT NULL AUTO_INCREMENT FIRST,
+	CHANGE COLUMN `TypeName` `CusomerTypeName` VARCHAR(100) NOT NULL COLLATE 'utf8_unicode_ci' AFTER `CustomerTypeID`
+;

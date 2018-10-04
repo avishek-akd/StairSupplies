@@ -1,0 +1,65 @@
+<mockup version="1.0" skin="sketch">
+  <controls>
+    <control controlID="0" controlTypeID="com.balsamiq.mockups::TabBar" x="105" y="34" w="744" h="439" zOrder="0" locked="false" isInGroup="-1">
+      <controlProperties>
+        <text>Shippers%2C%20Quantities%2C%20Packing%20List</text>
+        <selectedIndex>1</selectedIndex>
+      </controlProperties>
+    </control>
+    <control controlID="2" controlTypeID="com.balsamiq.mockups::Button" x="676" y="76" w="-1" h="-1" zOrder="1" locked="false" isInGroup="-1">
+      <controlProperties>
+        <text>Save%20and%20Continue%20%3E%3E</text>
+      </controlProperties>
+    </control>
+    <control controlID="3" controlTypeID="com.balsamiq.mockups::DataGrid" x="127" y="179" w="673" h="273" zOrder="2" locked="false" isInGroup="-1">
+      <controlProperties>
+        <text>Order%20Qty%2CPrev%20Shipped%2CShip%20Qty%2C%20Item%0A6%2C3%2C%2C%20asdasasdas%20das%20dsad%20asd%0A6%2C3%2C%2C%20asdasasdas%20das%20dsad%20asd%0A6%2C3%2C%2C%20asdasasdas%20das%20dsad%20asd</text>
+      </controlProperties>
+    </control>
+    <control controlID="5" controlTypeID="com.balsamiq.mockups::TextInput" x="411" y="204" w="62" h="-1" zOrder="3" locked="false" isInGroup="-1">
+      <controlProperties>
+        <text>0</text>
+      </controlProperties>
+    </control>
+    <control controlID="6" controlTypeID="com.balsamiq.mockups::TextInput" x="411" y="233" w="62" h="-1" zOrder="4" locked="false" isInGroup="-1">
+      <controlProperties>
+        <text>0</text>
+      </controlProperties>
+    </control>
+    <control controlID="7" controlTypeID="com.balsamiq.mockups::TextInput" x="411" y="262" w="62" h="-1" zOrder="5" locked="false" isInGroup="-1">
+      <controlProperties>
+        <text>0</text>
+      </controlProperties>
+    </control>
+    <control controlID="8" controlTypeID="com.balsamiq.mockups::TextInput" x="127" y="76" w="-1" h="-1" zOrder="6" locked="false" isInGroup="-1">
+      <controlProperties>
+        <text>Order%20Number</text>
+      </controlProperties>
+    </control>
+    <control controlID="9" controlTypeID="com.balsamiq.mockups::TextInput" x="127" y="108" w="-1" h="-1" zOrder="7" locked="false" isInGroup="-1">
+      <controlProperties>
+        <text>Job%20Name</text>
+      </controlProperties>
+    </control>
+    <control controlID="10" controlTypeID="com.balsamiq.mockups::TextInput" x="255" y="76" w="-1" h="-1" zOrder="8" locked="false" isInGroup="-1">
+      <controlProperties>
+        <text>123</text>
+      </controlProperties>
+    </control>
+    <control controlID="11" controlTypeID="com.balsamiq.mockups::TextInput" x="255" y="108" w="-1" h="-1" zOrder="9" locked="false" isInGroup="-1">
+      <controlProperties>
+        <text>asdasd</text>
+      </controlProperties>
+    </control>
+    <control controlID="12" controlTypeID="com.balsamiq.mockups::TextInput" x="127" y="137" w="-1" h="-1" zOrder="10" locked="false" isInGroup="-1">
+      <controlProperties>
+        <text>Shipping%20Notes</text>
+      </controlProperties>
+    </control>
+    <control controlID="13" controlTypeID="com.balsamiq.mockups::TextInput" x="255" y="137" w="-1" h="-1" zOrder="11" locked="false" isInGroup="-1">
+      <controlProperties>
+        <text>asdasd</text>
+      </controlProperties>
+    </control>
+  </controls>
+</mockup>

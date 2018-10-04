@@ -1,0 +1,38 @@
+@namespace s "library://ns.adobe.com/flex/spark";
+@namespace mx "library://ns.adobe.com/flex/mx";
+
+
+mx|Application { padding-top:5px; padding-left:0px; padding-right:0px; padding-bottom:0px;
+	background-gradient-colors:#ffffff,#ffffff; } 
+.orderNumber  { width:800px; }
+
+mx|HBox.warningBox
+{
+	backgroundColor: #FEEFB3;
+	borderColor: #9F6000;
+	borderStyle: solid;
+	color: #9F6000;
+	fontSize: 14;
+	paddingTop: 2;
+	paddingBottom: 2;
+	paddingLeft: 5;
+	paddingRight: 5;
+}
+
+.shipShipment
+{
+	disabledIcon: Embed('shipment_disabled.gif');
+	icon: Embed('shipment.gif');
+}
+
+
+.inHouseNotes        { color:#ff0000; } /* In house column values */
+.inHouseNotesColumn  { color:#000000; } /* In house column header */
+
+mx|Button.save          { icon:Embed(source="save.png");}
+.copyToClipboard     { icon:Embed('clipboard.png'); }
+.emailPackingList    { icon:Embed('email.png'); }
+.backButton          { icon:Embed('arrow_left.png'); }
+.continueButton      { icon:Embed('arrow_right.png'); }
+.shipments           { icon:Embed(source="truck.png"); }
+.shipmentsWithStaged { icon:Embed(source="shipment.gif"); }

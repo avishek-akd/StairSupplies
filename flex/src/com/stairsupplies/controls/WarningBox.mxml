@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mx:HBox xmlns:mx="http://www.adobe.com/2006/mxml" width="80%" styleName="warningBox" visible="false">
+
+	<mx:Script>
+		<![CDATA[
+			public function show(message:String):void {
+				warningText.text = "Warning: " + message;
+				visible = true;
+			}
+			
+			public function hide():void {
+				visible = false;
+			}
+		]]>
+	</mx:Script>
+
+	<mx:Image source="@Embed('assets/Knob Attention.png')" />
+	<mx:Text id="warningText" text="" paddingLeft="10" paddingTop="5"/>	
+</mx:HBox>

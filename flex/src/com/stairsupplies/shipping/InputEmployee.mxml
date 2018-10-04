@@ -1,0 +1,117 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mx:HBox xmlns:mx="http://www.adobe.com/2006/mxml" creationComplete="init()">
+	<mx:Script>
+		<![CDATA[
+			import mx.binding.utils.BindingUtils;
+			import mx.collections.ArrayCollection;
+
+			
+			public var employees:ArrayCollection;
+			
+
+			[Bindable] public var employeeID:Number;
+			[Bindable] public var employeeCode:String;
+
+
+			private function init():void {
+				employeeCodeInput.addEventListener(Event.CHANGE, textFieldInputListener);   
+				employeeCodeInput.addEventListener(TextEvent.TEXT_INPUT, textFieldInputListener);
+				
+				BindingUtils.bindSetter(setEmployeeID, this, "employeeID");
+			}
+			
+
+			private function setEmployeeID(o:Object):void {
+				
+				if(isNaN(o as Number)) {
+					return;
+				}
+				
+				var employee:Object;
+
+				employee = findByID(o as Number);
+				
+				toggleFound();
+				
+				if( employee != null ) {
+					employeeName.text      = employee.name;
+					employeeCodeInput.text = employee.EmployeeCode; 
+					employeeCodeInput.errorString = "";
+				}
+				
+				toggleFound( employee != null );
+			}
+
+			
+			private function textFieldInputListener(event:Event):void {
+				var employee:Object;
+
+				toggleFound();
+				
+				employeeID   = 0;
+				employeeCode = event.target.text;
+				
+				if( employeeCode.length == 4 ) {
+					employee = findByCode( employeeCode );
+
+					if( employee != null ) {
+						employeeID = employee.EmployeeID;
+					}
+					
+					toggleFound( employee != null );
+				}
+			}
+			
+			
+			private function toggleFound(... arguments):void {
+				if( arguments.length == 1 ) {
+					var found:Boolean = arguments[0];
+					
+					employeeOk.includeInLayout       = (found==true ? true : false);
+					employeeOk.visible               = (found==true ? true : false);
+					employeeNotFound.includeInLayout = (found==false ? true : false);
+					employeeNotFound.visible         = (found==false ? true : false);
+				} else {
+					employeeOk.includeInLayout       = false;
+					employeeOk.visible               = false;
+					employeeNotFound.includeInLayout = false;
+					employeeNotFound.visible         = false;
+				}
+			}
+			
+			
+			private function findByID(id:Number):Object {
+				var i:Number = 0;
+				
+				for(i=0; i < employees.length; i++) {
+					if( employees[i].EmployeeID == id) {
+						return employees[i];
+					}
+				}
+				
+				return null;
+			}
+			
+			
+			private function findByCode(code:String):Object {
+				var i:Number = 0;
+				
+				for(i=0; i < employees.length; i++) {
+					if( employees[i].EmployeeCode == code) {
+						return employees[i];
+					}
+				}
+
+				return null;
+			}
+		]]>
+	</mx:Script>
+
+
+	<mx:TextInput id="employeeCodeInput" text="{employeeCode}" width="50"/>
+	<mx:HBox id="employeeOk" includeInLayout="false" visible="false" verticalAlign="middle" height="100%">
+		<mx:Image source="@Embed('assets/ok.png')" />
+		<mx:Label id="employeeName"/>
+	</mx:HBox>
+	<mx:Label id="employeeNotFound" includeInLayout="false" visible="false" text="Not found" color="#990000"/>
+</mx:HBox>

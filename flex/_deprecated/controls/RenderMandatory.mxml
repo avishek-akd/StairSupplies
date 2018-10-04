@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:MXDataGridItemRenderer xmlns:fx="http://ns.adobe.com/mxml/2009" 
+						  xmlns:s="library://ns.adobe.com/flex/spark" 
+						  xmlns:mx="library://ns.adobe.com/flex/mx" 
+						  focusEnabled="true">
+	<fx:Script>
+		<![CDATA[
+			protected var _Mandatory:Number;
+			
+			public function set Mandatory( value:Number ):void
+			{
+				_Mandatory = value;
+			}
+			public function get Mandatory():Number
+			{
+				return _Mandatory;
+			}
+		]]>
+	</fx:Script>
+	
+	<s:CheckBox id="abc" selected="{data.Mandatory}" horizontalCenter="0" change="{_Mandatory=int(abc.selected)}" />
+</s:MXDataGridItemRenderer>

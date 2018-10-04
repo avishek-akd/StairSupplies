@@ -1,0 +1,119 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mx:TitleWindow xmlns:mx="http://www.adobe.com/2006/mxml" xmlns:stairsupplies="com.stairsupplies.*"
+		xmlns:controls="com.stairsupplies.controls.*" xmlns:shipping="com.stairsupplies.shipping.*"
+		width="930" height="715" layout="vertical" borderAlpha="1" showCloseButton="true"
+		close="PopUpManager.removePopUp(this);" creationComplete="init()" title="{'Shipment ' + _shipmentInfo.ShipmentNumber}">
+
+
+	<mx:Script>
+		<![CDATA[
+			import mx.collections.ArrayCollection;
+			import mx.core.FlexGlobals;
+			import mx.core.IFlexDisplayObject;
+			import mx.managers.PopUpManager;
+			import mx.rpc.events.FaultEvent;
+			import mx.rpc.events.ResultEvent;
+			import mx.utils.ObjectProxy;
+
+
+			[Bindable]
+			private var _shipmentInfo:ObjectProxy;
+			[Bindable]
+			private var _shipmentItems:ArrayCollection;
+
+			
+			public function setShipmentId( orderShipmentId:int ):void {
+				shippingService.getShipment( orderShipmentId );
+			}
+
+
+			private function init():void {
+				shippingService.addEventListener(FaultEvent.FAULT, FlexGlobals.topLevelApplication.faultHandler);
+				printPackingList.addEventListener(MouseEvent.CLICK, doPrintPackingList);
+				printBillOfLading.addEventListener(MouseEvent.CLICK, doPrintBillOfLading);
+			}
+
+
+			private function doPrintPackingList(ev:Event):void {
+				navigateToURL(new URLRequest("print_shipment_packing_list.cfm?OrderShipment_id=" + _shipmentInfo.OrderShipment_id), "_blank");
+			}
+
+
+			private function doPrintBillOfLading(ev:Event):void {
+				navigateToURL(new URLRequest("print_bill_of_lading.cfm?orderShipmentId=" + _shipmentInfo.OrderShipment_id), "_blank");
+			}
+
+
+			private function receiveShipment(event:ResultEvent):void {
+				var currentWindow:IFlexDisplayObject = this;
+
+				_shipmentInfo                = new ObjectProxy(event.result.shipmentInfo[0]);
+				_shipmentInfo.email_message  = event.result.email_message;
+				_shipmentInfo.shipment_image = event.result.shipment_image;
+				_shipmentInfo.in_house_image = event.result.in_house_image;
+				_shipmentItems               = FlexGlobals.topLevelApplication.addErrorFields(event.result.shipmentItems);
+
+				navigator.removeChildAt(0);
+
+				if( ! _shipmentInfo.isShipped || FlexGlobals.topLevelApplication.isAdministrator ) {
+					/*  Shipment is staged or the user is an administrator, allow the shipment to be edited completely  */
+					var window2:ShipmentEdit = new ShipmentEdit();
+					window2.shipmentInfo  = _shipmentInfo;
+					window2.shipmentItems = _shipmentItems;
+					window2.addEventListener("shipmentUpdated", function(event:Event):void {
+						PopUpManager.removePopUp( currentWindow );
+						dispatchEvent(event.clone());
+					});
+					window2.addEventListener("printBillOfLading", doPrintBillOfLading);
+					
+					navigator.addChildAt(window2, 0);
+				} else {
+					/*  Item is shipped and the user is not an admin so he can only see the shipment details  */
+					var window1:ShipmentView = new ShipmentView();
+					window1.shipmentInfo  = _shipmentInfo;
+					window1.shipmentItems = _shipmentItems;
+
+					navigator.addChildAt(window1, 0);
+				}
+				currentState = "shipmentLoaded";
+			}
+		]]>
+	</mx:Script>
+
+
+	<mx:RemoteObject id="shippingService" showBusyCursor="true" destination="ColdFusion"
+					 source="{FlexGlobals.topLevelApplication.cfcRootPath}com.stairsupplies.ShippingService">
+		<mx:method name="getShipment" result="receiveShipment(event)"/>
+	</mx:RemoteObject>
+
+	
+	<mx:states>
+		<mx:State name="shipmentLoaded">
+			<mx:SetProperty target="{navigator}" name="includeInLayout" value="true"/>
+			<mx:SetProperty target="{navigator}" name="visible" value="true"/>
+			<mx:SetProperty target="{navigator}" name="selectedIndex" value="0"/>
+		</mx:State>
+	</mx:states>
+
+
+	<mx:TabNavigator height="100%" width="100%" creationPolicy="all" resizeToContent="true" id="navigator" includeInLayout="false" visible="false">
+		
+		<mx:VBox label="Placeholder for the shipment info/edit"/>
+		
+		<shipping:SendPackingList shipmentInfo="{_shipmentInfo}"/>
+
+		<mx:Form label="Print Packing List" width="100%" height="100%">
+			<mx:FormItem>
+				<mx:LinkButton id="printPackingList" label="Print Packing List" icon="@Embed(source='assets/print.png')"/>
+			</mx:FormItem>
+		</mx:Form>
+		
+		<mx:Form label="Print Bill of Lading" width="100%" height="100%">
+			<mx:FormItem>
+				<mx:LinkButton id="printBillOfLading" label="Print Bill Of Lading" icon="@Embed(source='assets/print.png')"/>
+			</mx:FormItem>
+		</mx:Form>
+
+	</mx:TabNavigator>
+	
+</mx:TitleWindow>

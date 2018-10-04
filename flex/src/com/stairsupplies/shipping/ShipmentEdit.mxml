@@ -1,0 +1,201 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mx:VBox xmlns:mx="http://www.adobe.com/2006/mxml" xmlns:controls="com.stairsupplies.controls.*" xmlns:shipping="com.stairsupplies.shipping.*"
+		 label="Edit Shipment" width="100%" creationComplete="init();">
+		
+	<mx:Script>
+		<![CDATA[
+			import mx.collections.ArrayCollection;
+			import mx.core.FlexGlobals;
+			import mx.events.ValidationResultEvent;
+			import mx.managers.PopUpManager;
+			import mx.rpc.events.FaultEvent;
+			import mx.rpc.events.ResultEvent;
+			import mx.utils.ObjectProxy;
+			import mx.validators.Validator;
+			
+			
+			[Bindable]
+			public var shipmentInfo:ObjectProxy;
+			[Bindable]
+			public var shipmentItems:ArrayCollection;
+			
+			private var _shipShipment:Boolean;
+			
+			
+			public function setShipmentId( orderShipmentId:int ):void {
+				shippingService.getShipment( orderShipmentId );
+			}
+			
+
+			private function init():void {
+				shippingService.addEventListener(FaultEvent.FAULT, FlexGlobals.topLevelApplication.faultHandler);
+				
+				itemsInShipment.addEventListener("productsValid", function(ev:Event):void {
+					btnShipShipment.enabled       = true;
+					btnUpdateShipment.enabled     = true;
+					btnUpdateShipment.errorString = "";
+				});			
+				itemsInShipment.addEventListener("productsInvalid", function(ev:Event):void {
+					btnShipShipment.enabled       = false;
+					btnUpdateShipment.enabled     = false;
+					btnUpdateShipment.errorString = "The shipment must include at least 1 item.";
+				});		
+				
+				itemsInShipment.addEventListener("overShipWarningOn", function(ev:Event):void {
+					overShipWarning.show("Shipped quantity is higher than ordered quantity.");
+				});			
+				itemsInShipment.addEventListener("overShipWarningOff", function(ev:Event):void {
+					overShipWarning.hide();
+				});	
+				
+				btnUpdateShipment.addEventListener(MouseEvent.CLICK, updateShipment);
+				btnShipShipment.addEventListener(MouseEvent.CLICK, updateShipment);
+				
+				estimatedArrivalDate.date.selectedDate = shipmentInfo.estimatedArrivalDate;
+				
+				/*  Allow shipping only for STAGED shipments  */
+				btnShipShipment.visible         = (! shipmentInfo.isShipped);
+				btnShipShipment.includeInLayout = (! shipmentInfo.isShipped);
+				
+				if( shipmentInfo.shipment_image ) {
+					shipment_image.setImage(shipmentInfo.shipment_image.webDirectory, shipmentInfo.shipment_image.thumbnail);	
+				}
+				if( shipmentInfo.in_house_image ) {
+					in_house_image.setImage(shipmentInfo.in_house_image.webDirectory, shipmentInfo.in_house_image.thumbnail);	
+				}
+			}
+
+
+			private function getShipmentItems():Array {
+				var items:Array  = new Array();
+				
+				for(var i:int = 0; i < shipmentItems.length; i++) {
+					if( shipmentItems[i].quantityToShip > 0 ) {
+						items.push( {
+							OrderShipmentItemsID:shipmentItems[i].OrderShipmentItemsID,
+							quantityToShip:shipmentItems[i].quantityToShip,
+							BoxSkidNumber:shipmentItems[i].BoxSkidNumber} );	
+					}
+				}
+				
+				return items;
+			}
+			
+			
+			private function updateShipment(ev:Event):void {
+				var errors:Array = Validator.validateAll( validators );
+				
+				if( ! errors.length ) {
+					if( btnUpdateShipment.enabled ) {
+						var items:Array = getShipmentItems();
+						
+						/*  The user clicked on the button to ship a staged shipment  */
+						_shipShipment = (ev.currentTarget.id == "btnShipShipment");
+						
+						btnShipShipment.enabled   = false;
+						btnUpdateShipment.enabled = false;
+						shippingService.updateShipment(shipmentInfo.OrderShipment_id,
+														pulled_by_id.employeeID, packaged_by_id.employeeID, processed_by_id.employeeID,
+														shipping_method.selectedItem.ShippingMethodID,
+														shippingDirections.text, tracking_number.text, estimatedArrivalDate.date.selectedDate, actualShippingCosts.text,
+														_shipShipment, items,
+														shipment_image.getFileName(),
+														shipment_image.getFileContent(),
+														in_house_image.getFileName(),
+														in_house_image.getFileContent()
+						);
+					}
+				} else {
+					/*  Set focus and force the error message to be displayed for the first field with error  */
+					(errors[0] as ValidationResultEvent).target.source.setFocus();
+					(errors[0] as ValidationResultEvent).target.source.dispatchEvent(new MouseEvent(MouseEvent.MOUSE_OVER));
+				}
+			}
+
+			
+			private function shipmentUpdated(event:ResultEvent):void {
+				dispatchEvent(new Event("shipmentUpdated"));
+
+				/*  Automatically open a new window with the Bill of Lading when a shipment is shipped  */
+				if( _shipShipment ) {
+					dispatchEvent(new Event("printBillOfLading"));
+				}
+			}
+		]]>
+	</mx:Script>
+	
+		
+	<mx:RemoteObject id="shippingService" showBusyCursor="true" destination="ColdFusion"
+					 source="{FlexGlobals.topLevelApplication.cfcRootPath}com.stairsupplies.ShippingService">
+		<mx:method name="updateShipment" result="shipmentUpdated(event)"/>
+	</mx:RemoteObject>
+
+
+	<mx:Array id="validators">
+		<mx:NumberValidator source="{pulled_by_id}"    required="true" property="employeeID" minValue="1" lowerThanMinError="Employee not found" requiredFieldError="Employee Code required" listener="{pulled_by_id.employeeCodeInput}"/>
+		<mx:NumberValidator source="{packaged_by_id}"  required="true" property="employeeID" minValue="1" lowerThanMinError="Employee not found" requiredFieldError="Employee Code required" listener="{packaged_by_id.employeeCodeInput}"/>
+		<mx:NumberValidator source="{processed_by_id}" required="true" property="employeeID" minValue="1" lowerThanMinError="Employee not found" requiredFieldError="Employee Code required" listener="{processed_by_id.employeeCodeInput}"/>
+		
+		<mx:StringValidator source="{tracking_number}" property="text"
+							maxLength="150" required="{shipping_method.selectedItem.TrackingNumberRequired}"/>
+		<mx:DateValidator source="{estimatedArrivalDate.date}" property="selectedDate"
+						  required="{shipping_method.selectedItem.EstimatedArrivalDateRequired}"/>
+		<mx:StringValidator source="{shipment_image}" property="fileName" 
+							maxLength="100" required="{shipping_method.selectedItem.TrackingNumberRequired}"/>
+		<mx:NumberValidator source="{actualShippingCosts}" property="text" required="true"/>
+	</mx:Array>
+
+
+	<mx:HBox horizontalAlign="center">
+		<mx:Form>
+			<mx:FormItem label="Pulled by" required="true">
+				<shipping:InputEmployee id="pulled_by_id" employees="{FlexGlobals.topLevelApplication.employees}" employeeID="{shipmentInfo.pulled_by_id}"/>
+			</mx:FormItem>
+			<mx:FormItem label="Packaged by" required="true">
+				<shipping:InputEmployee id="packaged_by_id" employees="{FlexGlobals.topLevelApplication.employees}" employeeID="{shipmentInfo.packaged_by_id}"/>
+			</mx:FormItem>
+			<mx:FormItem label="Processed by" required="true">
+				<shipping:InputEmployee id="processed_by_id" employees="{FlexGlobals.topLevelApplication.employees}" employeeID="{shipmentInfo.processed_by_id}"/>
+			</mx:FormItem>
+			<mx:FormItem label="Shipping Method">
+				<controls:VBComboBox id="shipping_method" dataProvider="{FlexGlobals.topLevelApplication.shippingMethods}" selectedValue="{shipmentInfo.ShippingMethodID}"
+									 dataProperty="ShippingMethodID" labelField="ShippingMethod"></controls:VBComboBox>
+			</mx:FormItem>
+			<mx:FormItem label="Tracking Number" required="{shipping_method.selectedItem.TrackingNumberRequired}">
+				<mx:TextInput id="tracking_number" text="{shipmentInfo.TrackingNumber}"/>
+			</mx:FormItem>
+			<mx:FormItem label="Estimated Arrival Date" required="{shipping_method.selectedItem.EstimatedArrivalDateRequired}">
+				<controls:DateFieldWithClear id="estimatedArrivalDate"/>
+			</mx:FormItem>
+			<mx:FormItem label="Actual Shipping Cost ($)">
+				<mx:TextInput id="actualShippingCosts" text="{shipmentInfo.actualShippingCosts}" maxChars="7" textAlign="right"/>
+			</mx:FormItem>
+		</mx:Form>
+		
+		<mx:VRule height="100%"/>
+		
+		<mx:Form>
+			<mx:FormItem label="Shipment Image">
+				<mx:HBox>
+					<controls:ImageUpload id="shipment_image"/>
+					<mx:FormItem label="In House Image">
+						<controls:ImageUpload id="in_house_image"/>
+					</mx:FormItem>
+				</mx:HBox>
+			</mx:FormItem>
+			<mx:FormItem label="Shipping Instructions">
+				<mx:TextArea id="shippingDirections" text="{shipmentInfo.shippingDirections}" width="270" height="100"/>
+			</mx:FormItem>
+		</mx:Form>
+	</mx:HBox>
+	
+	<shipping:OrderItemsEdit id="itemsInShipment" dataProvider="{shipmentItems}" type="edit" rowCount="{Math.max(10, shipmentItems.length)}"/>
+	
+	<controls:WarningBox id="overShipWarning"/>
+	
+	<mx:HBox>
+		<controls:ButtonWithKeyboard id="btnUpdateShipment" label="Update Shipment"/>
+		<controls:ButtonWithKeyboard id="btnShipShipment"   label="Update and Ship Shipment" visible="false" includeInLayout="false"/>
+	</mx:HBox>
+
+</mx:VBox>

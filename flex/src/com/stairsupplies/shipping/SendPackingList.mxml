@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mx:Form xmlns:mx="http://www.adobe.com/2006/mxml" label="Send Packing list" creationComplete="init();">
+	
+	<mx:Script>
+		<![CDATA[
+			import mx.core.FlexGlobals;
+			import mx.rpc.events.FaultEvent;
+			import mx.utils.ObjectProxy;
+			
+			
+			[Bindable]
+			public var shipmentInfo:ObjectProxy;
+
+			
+			private function init():void {
+				shippingService.addEventListener(FaultEvent.FAULT, FlexGlobals.topLevelApplication.faultHandler);
+
+				emailPackingList.addEventListener(MouseEvent.CLICK, function(ev:MouseEvent):void {
+					shippingService.shipmentSendEmailToCustomer(shipmentInfo.OrderShipment_id, ShipEmails.text, email_message.text);
+					ev.target.enabled = false;
+				});
+			}
+		]]>
+	</mx:Script>
+	
+	
+	<mx:RemoteObject id="shippingService" showBusyCursor="true" destination="ColdFusion"
+					 source="{FlexGlobals.topLevelApplication.cfcRootPath}com.stairsupplies.ShippingService">
+		<mx:method name="shipmentSendEmailToCustomer"/>
+	</mx:RemoteObject>
+	
+	
+	<mx:FormItem label="Email">
+		<mx:TextInput id="ShipEmails" text="{shipmentInfo.ShipEmails}"/>
+	</mx:FormItem>
+	<mx:FormItem label="Message">
+		<mx:TextArea id="email_message" width="600" height="210" text="{shipmentInfo.email_message}"/>
+	</mx:FormItem>
+	<mx:FormItem>
+		<mx:Button id="emailPackingList" styleName="emailPackingList" label="Email Packing List"/>
+	</mx:FormItem>
+</mx:Form>

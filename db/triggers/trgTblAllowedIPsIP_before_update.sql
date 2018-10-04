@@ -1,0 +1,16 @@
+DELIMITER $$
+
+
+DROP TRIGGER IF EXISTS `trgTblAllowedIPsIP_before_update`
+$$
+CREATE TRIGGER `trgTblAllowedIPsIP_before_update` BEFORE UPDATE ON `TblAllowedIPsIP` FOR EACH ROW BEGIN
+IF NEW.IPAddress <> '*' THEN
+	IF INET_ATON(NEW.IPAddress) IS NULL THEN
+		SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Invalid IP address.';
+    END IF;
+END IF;
+END
+$$
+
+
+DELIMITER ;

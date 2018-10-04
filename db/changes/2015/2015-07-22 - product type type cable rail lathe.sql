@@ -1,0 +1,1 @@
+INSERT INTO `TblProductTypeType` (`title`) VALUES ('Cable Rail - Lathes');

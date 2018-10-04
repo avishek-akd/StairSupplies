@@ -1,0 +1,470 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mx:HBox xmlns:mx="http://www.adobe.com/2006/mxml"
+	width="100%"
+	xmlns:classes="com.hillelcoren.components.autoComplete.classes.*"
+	xmlns:local="*" creationComplete="init()" xmlns:stairsupplies="com.stairsupplies.*"
+	xmlns:file="com.flashdev.file.*" xmlns:controls="com.stairsupplies.controls.*"
+	xmlns:products="com.stairsupplies.products.*" xmlns:validators="com.stairsupplies.validators.*">
+
+	<mx:Metadata>
+		[Event(name="productSave", type="com.stairsupplies.events.ProductSaveEvent")]
+		[Event(name="cancel", type="flash.events.Event")]
+	</mx:Metadata>
+
+	<mx:Script>
+		<![CDATA[
+			import com.stairsupplies.events.ProductSaveEvent;
+			import com.stairsupplies.model.Product;
+			
+			import mx.binding.utils.ChangeWatcher;
+			import mx.collections.ArrayCollection;
+			import mx.controls.Alert;
+			import mx.core.FlexGlobals;
+			import mx.messaging.events.ChannelEvent;
+			import mx.rpc.events.FaultEvent;
+			import mx.rpc.events.ResultEvent;
+			import mx.validators.Validator;
+
+
+			[Bindable] public var companies:ArrayCollection;
+			[Bindable] public var productTypes:ArrayCollection;
+			[Bindable] public var vendors:ArrayCollection;
+			[Bindable] public var materials:ArrayCollection;
+			[Bindable] public var materialSizes:ArrayCollection;
+			[Bindable] public var finish_options:ArrayCollection;
+			[Bindable] public var unitOfMeasures:ArrayCollection;
+			[Bindable] public var postTopStyles:ArrayCollection;
+			[Bindable] public var postFootStyles:ArrayCollection;
+
+			[Bindable] private var product:Product = null;
+			[Bindable] private var productFiles:ArrayCollection = new ArrayCollection();
+			[Bindable] private var promptMessage:String = "Please select";
+			
+			[Bindable]
+			private var _tmpIncludedProducts:ArrayCollection = new ArrayCollection();
+			[Bindable]
+			private var _tmpAutosuggestions:ArrayCollection = new ArrayCollection();
+
+
+			public function showProductForm( productValue:Product ):void {
+				product = productValue;
+
+				resetForm();
+
+				if( product.ProductID == 0 ) {
+					formHeading.label = "Add Product";
+					saveButton.label  = "Add Product";
+					
+					showHideCompanySpecificInfo( 1 );
+				} else {
+					formHeading.label  = "Update Product";
+					saveButton.label   = "Update Product";
+					productService.getFiles( product.ProductID );
+					
+					showHideCompanySpecificInfo( product.CompanyID );
+				}
+				
+				_tmpIncludedProducts.disableAutoUpdate();
+				_tmpIncludedProducts.source = product.IncludedProducts;
+				_tmpIncludedProducts.enableAutoUpdate();
+				_tmpAutosuggestions.disableAutoUpdate();
+				_tmpAutosuggestions.source = product.Autosuggestions;
+				_tmpAutosuggestions.enableAutoUpdate();
+				/*  -1 is a flag that says the number is NULL in database  */
+				if( product.Purchase_Price == -1 ) {
+					Purchase_Price.text = "";
+				}
+			}
+			
+
+			private function init():void {
+				productService.addEventListener(FaultEvent.FAULT, FlexGlobals.topLevelApplication.faultHandler);
+				
+				saveButton.addEventListener(MouseEvent.CLICK, function(event:MouseEvent):void {
+					var errors:Array = Validator.validateAll(myValidators);
+					if(errors.length == 0) {
+						dispatchEvent(new ProductSaveEvent( buildProduct() ));
+					}
+				});
+				
+				cancelButton.addEventListener(MouseEvent.CLICK, function(event:MouseEvent):void {
+					dispatchEvent(new Event('cancel'));
+				});
+				
+				filesUpload.addEventListener("changesComplete", function(event:Event):void {
+					productService.getFiles( product.ProductID );
+				});
+				
+				CompanyID.addEventListener("change", function(event:Event):void {
+					showHideCompanySpecificInfo( event.target.selectedCompanyID );
+				});
+			}
+
+			
+			private function showHideCompanySpecificInfo( companyID:int ):void {
+				switch ( companyID ) {
+					case 1:
+						info_BoardFootage.visible = true;
+						info_BoardFootage.includeInLayout = true;
+						break;
+					case 2:
+						info_BoardFootage.visible = false;
+						info_BoardFootage.includeInLayout = false;
+						break;
+					case 3:
+						info_BoardFootage.visible = false;
+						info_BoardFootage.includeInLayout = false;
+						break;
+					case 4:
+						info_BoardFootage.visible = false;
+						info_BoardFootage.includeInLayout = false;
+						break;
+				}					
+			}
+			
+			
+			private function resetForm():void {
+				Vendor_ID.errorString = "";
+				ProductType_id.errorString = "";
+				ProductName.errorString = "";
+				ProductDescription.errorString = "";
+				Production_Instructions.errorString = "";
+				Purchase_Price.errorString = "";
+				UnitWeight.errorString = "";
+				MaterialID.errorString = "";
+			}
+			
+			
+			private function buildProduct():Product {
+				var result:Product = new Product();
+				var i:Number = 0;
+
+				result.ProductID                  = product.ProductID;
+				result.CompanyID                  = CompanyID.selectedCompanyID;
+				result.Vendor_ID                  = Vendor_ID.selectedItem.data;
+				result.ProductType_id             = (ProductType_id.selectedItem != null ? ProductType_id.selectedItem.data : 0);
+				result.ProductName                = ProductName.text;
+				result.ProductDescription         = ProductDescription.text;
+				result.Production_Instructions    = Production_Instructions.text;
+				result.Customer_Notes             = Customer_Notes.text;
+				result.Purchase_Price             = (Purchase_Price.text == "" ? -1 : Number(Purchase_Price.text.replace(",", "")));
+				result.Unit_of_Measure            = (Unit_of_Measure.selectedItem != null ? Unit_of_Measure.selectedItem.data : "");
+				result.UnitWeight                 = Number(UnitWeight.text);
+				result.archived                   = archived.selected;
+				result.MaterialID                 = (MaterialID.selectedItem != null ? MaterialID.selectedItem.data : 0);
+				result.MaterialSizeID             = (MaterialSizeID.selectedItem != null ? MaterialSizeID.selectedItem.data : 0);
+				result.DefaultFinishOptionID      = (DefaultFinishOptionID.selectedItem != null ? DefaultFinishOptionID.selectedItem.data : 0);
+				result.BoardFootage               = Number(BoardFootage.text);
+				result.UnitPrice                  = Number(UnitPrice.text.replace(",", ""));
+				result.UnitPriceViewrail          = Number(UnitPriceViewrail.text.replace(",", ""));
+				result.VR_Part                    = VR_Part.text;
+				result.UnitPriceNAC               = Number(UnitPriceNAC.text.replace(",", ""));
+				result.LaborCost                  = Number(LaborCost.text.replace(",", ""));
+				result.PreFinishCost              = Number(PreFinishCost.text.replace(",", ""));
+				result.StairMargin                = Number(StairMargin.text.replace(",", ""));
+				result.FinishPrice                = Number(FinishPrice.text.replace(",", ""));
+				result.WebsitePartName            = WebsitePartName.text;
+				result.WebsiteURL                 = WebsiteURL.text;
+				result.WebsiteImageURL            = WebsiteImageURL.text;
+				result.CutLength                  = Number(CutLength.text.replace(",", ""));
+				result.CutAngle                   = Number(CutAngle.text.replace(",", ""));
+				result.PostTopStyleID             = (PostTopStyleID.selectedItem != null ? PostTopStyleID.selectedItem.data : 0);
+				result.PostFootStyleID            = (PostFootStyleID.selectedItem != null ? PostFootStyleID.selectedItem.data : 0);
+				result.Configuration              = Configuration.text;
+				result.HurcoProgram               = HurcoProgram.text;
+			
+				result.IncludedProducts           = new Array();
+				
+				for(i=0; i < includedProducts.selectedProducts.length; i++ ) {
+					result.IncludedProducts.push( includedProducts.selectedProducts.getItemAt(i) );
+				}
+
+				result.Autosuggestions           = new Array();
+				for(i=0; i < AutoSuggestProducts.selectedProducts.length; i++ ) {
+					result.Autosuggestions.push( AutoSuggestProducts.selectedProducts.getItemAt(i) );
+				}
+
+				return result;
+			}
+
+			public function handleGetFiles(event:ResultEvent):void{
+				productFiles = event.result as ArrayCollection;
+			}
+		]]>
+	</mx:Script>
+
+
+	<mx:RemoteObject id="productService" showBusyCursor="true"
+		destination="ColdFusion"
+		source="{FlexGlobals.topLevelApplication.cfcRootPath}com.stairsupplies.ProductService">
+		<mx:method name="getFiles" result="handleGetFiles( event )"/>
+	</mx:RemoteObject>
+	
+
+	<mx:Array id="myValidators">
+		<!--  the selected index in Vendor_ID might change a lot so validate only on submit   -->
+		<mx:NumberValidator source="{Vendor_ID}" triggerEvent="" property="selectedIndex"
+        	lowerThanMinError="Please select a Vendor."   	
+        	minValue="0" />
+		<mx:NumberValidator source="{ProductType_id}" triggerEvent="" property="selectedIndex"
+        	lowerThanMinError="Please select a Production Type."   	
+        	minValue="0" />
+
+		<mx:StringValidator source="{ProductName}" property="text" 
+			requiredFieldError="Please enter a name for the Product"
+			minLength="1" maxLength="100"/>
+		<mx:StringValidator source="{ProductDescription}"  property="text" 
+			minLength="0" maxLength="500"/>
+		<mx:StringValidator source="{Production_Instructions}" property="text" required="false" 
+			minLength="0" maxLength="255"/>
+		<mx:StringValidator source="{Customer_Notes}" property="text" required="false" 
+			minLength="0" maxLength="500"/>
+		<mx:NumberValidator source="{Purchase_Price}" property="text" required="false"
+			allowNegative="false" 
+			requiredFieldError="Please enter the Purchase Price"/>
+		<mx:NumberValidator source="{UnitPrice}" property="text" 
+			allowNegative="false"
+			requiredFieldError="Please enter the Standard Price"/>
+		<mx:NumberValidator source="{LaborCost}" property="text"
+			allowNegative="false" 
+			requiredFieldError="Please enter the employee PRC rate."/>
+		<mx:NumberValidator source="{PreFinishCost}" property="text" required="false"
+			allowNegative="false" 
+			requiredFieldError="Please enter the employee pre-finish rate."/>
+		<mx:NumberValidator source="{UnitWeight}" property="text"
+			allowNegative="false" 
+			requiredFieldError="Please enter the Unit Weight"/>
+
+		<validators:URLValidator source="{WebsiteURL}" property="text" required="false"
+			requiredFieldError="Please enter a correct address."/>
+		<validators:URLValidator source="{WebsiteImageURL}" property="text" required="false"
+			requiredFieldError="Please enter a correct Image address."/>
+	</mx:Array>
+	
+	
+	<mx:Form width="50%">
+		<mx:FormHeading label="" id="formHeading"/>
+		<mx:FormItem label="Company">
+			<controls:CompanySelector id="CompanyID" selectedCompanyID="{product.CompanyID}" type="input"/>
+		</mx:FormItem>
+		<mx:FormItem label="Production Type" required="true">
+			<controls:ComboBoxValue prompt="{promptMessage}" dataProvider="{productTypes}" id="ProductType_id" selectedValue="{product.ProductType_id}"/>
+		</mx:FormItem>
+		<mx:FormItem label="Vendor" required="true">
+			<controls:ComboBoxValue dataProvider="{vendors}" id="Vendor_ID" prompt="{promptMessage}" selectedValue="{product.Vendor_ID}"/>
+		</mx:FormItem>
+		<mx:FormItem label="Material">
+			<mx:HBox>
+				<controls:ComboBoxValue dataProvider="{materials}" id="MaterialID" prompt="{promptMessage} material" selectedValue="{product.MaterialID}"/>
+				<controls:ComboBoxValue dataProvider="{materialSizes}" id="MaterialSizeID" prompt="{promptMessage} material size" selectedValue="{product.MaterialSizeID}"/>
+			</mx:HBox>
+		</mx:FormItem>
+		<mx:FormItem label="Name" required="true">
+			<mx:TextInput id="ProductName" text="{product.ProductName}" />
+		</mx:FormItem>
+		<mx:FormItem label="Description" required="true">
+			<mx:TextArea id="ProductDescription" text="{product.ProductDescription}" height="100" width="250"/>
+		</mx:FormItem>
+		<mx:FormItem label="Production Instructions">
+			<mx:TextArea id="Production_Instructions" text="{product.Production_Instructions}" height="80" width="250"/>
+		</mx:FormItem>
+		<mx:FormItem label="Included Products">
+			<controls:ProductsAndQuantitySelection id="includedProducts" selectedProducts="{_tmpIncludedProducts}"/>
+		</mx:FormItem>
+		<mx:FormItem label="Default Finish Option">
+			<controls:ComboBoxValue dataProvider="{finish_options}" id="DefaultFinishOptionID" prompt="{promptMessage}" selectedValue="{product.DefaultFinishOptionID}"/>
+		</mx:FormItem>
+		<mx:FormItem label="Unit Of Measure" required="true">
+			<controls:ComboBoxValue dataProvider="{unitOfMeasures}" id="Unit_of_Measure" prompt="{promptMessage}" selectedValue="{product.Unit_of_Measure}"/>
+		</mx:FormItem>
+	</mx:Form>
+
+	<mx:VBox>
+		<mx:Form>
+			<mx:FormHeading label=""/>
+		</mx:Form>
+		<mx:FormItem label="Auto-suggestions">
+			<controls:ProductsSuggestionsSelection id="AutoSuggestProducts" selectedProducts="{_tmpAutosuggestions}"/>
+		</mx:FormItem>
+
+		<mx:Grid>
+			<mx:GridRow width="100%" height="100%">
+				<mx:GridItem width="100%" height="100%">
+					<mx:FormItem label="Labor Cost ($)" required="true"/>
+				</mx:GridItem>
+				<mx:GridItem width="100%" height="100%">
+					<mx:TextInput id="LaborCost" text="{product.LaborCost}" width="60"/>
+				</mx:GridItem>
+				<mx:GridItem width="100%" height="100%">
+					<mx:FormItem label="Pre-Finish Cost ($)"/>
+				</mx:GridItem>
+				<mx:GridItem width="100%" height="100%">
+					<mx:TextInput id="PreFinishCost" text="{product.PreFinishCost}" width="60"/>
+				</mx:GridItem>
+			</mx:GridRow>
+			<mx:GridRow width="100%" height="100%">
+				<mx:GridItem width="100%" height="100%">
+					<mx:FormItem label="Stair Margin (%)"/>
+				</mx:GridItem>
+				<mx:GridItem width="100%" height="100%">
+					<mx:TextInput id="StairMargin" text="{product.StairMargin}" width="60"/>
+				</mx:GridItem>
+			</mx:GridRow>
+			<mx:GridRow width="100%" height="100%">
+				<mx:GridItem width="100%" height="100%">
+					<mx:FormItem label="Purchase Price ($)" required="true"/>
+				</mx:GridItem>
+				<mx:GridItem width="100%" height="100%">
+					<mx:TextInput id="Purchase_Price" text="{product.Purchase_Price}" width="60" toolTip="If this is filled (including zro) it's used over the included products."/>
+				</mx:GridItem>
+				<mx:GridItem width="100%" height="100%">
+					<mx:FormItem label="Standard Price ($)" required="true"/>
+				</mx:GridItem>
+				<mx:GridItem width="100%" height="100%">
+					<mx:TextInput id="UnitPrice" text="{product.UnitPrice}" width="60"/>
+				</mx:GridItem>
+			</mx:GridRow>
+			<mx:GridRow width="100%" height="100%">
+				<mx:GridItem width="100%" height="100%">
+					<mx:FormItem label="Finish Price ($)"/>
+				</mx:GridItem>
+				<mx:GridItem width="100%" height="100%">
+					<mx:TextInput id="FinishPrice" text="{product.FinishPrice}" width="60"/>
+				</mx:GridItem>
+				<mx:GridItem width="100%" height="100%">
+					<mx:FormItem label="Viewrail Price ($)"/>
+				</mx:GridItem>
+				<mx:GridItem width="100%" height="100%">
+					<mx:TextInput id="UnitPriceViewrail" text="{product.UnitPriceViewrail}" width="60"/>
+				</mx:GridItem>
+			</mx:GridRow>
+			<mx:GridRow width="100%" height="100%">
+				<mx:GridItem width="100%" height="100%">
+					<mx:FormItem label="VR Part"/>
+				</mx:GridItem>
+				<mx:GridItem width="100%" height="100%">
+					<mx:TextInput id="VR_Part" text="{product.VR_Part}" width="60"/>
+				</mx:GridItem>
+				<mx:GridItem width="100%" height="100%">
+					<mx:FormItem label="NAC Price ($)"/>
+				</mx:GridItem>
+				<mx:GridItem width="100%" height="100%">
+					<mx:TextInput id="UnitPriceNAC" text="{product.UnitPriceNAC}" width="60"/>
+				</mx:GridItem>
+			</mx:GridRow>
+			<mx:GridRow width="100%" height="100%" id="info_BoardFootage">
+				<mx:GridItem width="100%" height="100%">
+					<mx:FormItem label="Unit Weight" required="true"/>
+				</mx:GridItem>
+				<mx:GridItem width="100%" height="100%">
+					<mx:TextInput id="UnitWeight" text="{product.UnitWeight}" width="60"/>
+				</mx:GridItem>
+				<mx:GridItem width="100%" height="100%">
+					<mx:FormItem label="Board Footage (sqf)"/>
+				</mx:GridItem>
+				<mx:GridItem width="100%" height="100%">
+					<mx:TextInput id="BoardFootage" text="{product.BoardFootage}" width="60"/>
+					<mx:Text text="{product.BoardFootage_history}"/>
+				</mx:GridItem>
+			</mx:GridRow>
+			<mx:GridRow width="100%" height="100%">
+				<mx:GridItem width="100%" height="100%">
+					<mx:FormItem label="Website Part Name"/>
+				</mx:GridItem>
+				<mx:GridItem width="100%" height="100%" colSpan="3">
+					<mx:TextInput id="WebsitePartName" text="{product.WebsitePartName}" />
+				</mx:GridItem>
+			</mx:GridRow>
+			<mx:GridRow width="100%" height="100%">
+				<mx:GridItem width="100%" height="100%">
+					<mx:FormItem label="Website URL"/>
+				</mx:GridItem>
+				<mx:GridItem width="100%" height="100%" colSpan="3">
+					<mx:TextInput id="WebsiteURL" text="{product.WebsiteURL}" width="100%"/>
+				</mx:GridItem>
+			</mx:GridRow>
+			<mx:GridRow width="100%" height="100%">
+				<mx:GridItem width="100%" height="100%">
+					<mx:FormItem label="Website Image URL"/>
+				</mx:GridItem>
+				<mx:GridItem width="100%" height="100%" colSpan="3">
+					<mx:TextInput id="WebsiteImageURL" text="{product.WebsiteImageURL}" width="100%"/>
+				</mx:GridItem>
+			</mx:GridRow>
+			<mx:GridRow width="100%" height="100%">
+				<mx:GridItem width="100%" height="100%">
+					<mx:FormItem label="Cut length"/>
+				</mx:GridItem>
+				<mx:GridItem width="100%" height="100%">
+					<mx:TextInput id="CutLength" text="{product.CutLength}" width="60"/>
+				</mx:GridItem>
+				<mx:GridItem width="100%" height="100%">
+					<mx:FormItem label="Cut angle"/>
+				</mx:GridItem>
+				<mx:GridItem width="100%" height="100%">
+					<mx:TextInput id="CutAngle" text="{product.CutAngle}" width="60"/>
+				</mx:GridItem>
+			</mx:GridRow>
+			<mx:GridRow width="100%" height="100%">
+				<mx:GridItem width="100%" height="100%">
+					<mx:FormItem label="Post Top Style"/>
+				</mx:GridItem>
+				<mx:GridItem width="100%" height="100%" colSpan="3">
+					<controls:ComboBoxValue dataProvider="{postTopStyles}" id="PostTopStyleID" prompt="{promptMessage}" selectedValue="{product.PostTopStyleID}"/>
+				</mx:GridItem>
+			</mx:GridRow>
+			<mx:GridRow width="100%" height="100%">
+				<mx:GridItem width="100%" height="100%">
+					<mx:FormItem label="Post Foot Style"/>
+				</mx:GridItem>
+				<mx:GridItem width="100%" height="100%" colSpan="3">
+					<controls:ComboBoxValue dataProvider="{postFootStyles}" id="PostFootStyleID" prompt="{promptMessage}" selectedValue="{product.PostFootStyleID}"/>
+				</mx:GridItem>
+			</mx:GridRow>
+			<mx:GridRow width="100%" height="100%">
+				<mx:GridItem width="100%" height="100%">
+					<mx:FormItem label="Configuration"/>
+				</mx:GridItem>
+				<mx:GridItem width="100%" height="100%" colSpan="3">
+					<mx:TextInput id="Configuration" text="{product.Configuration}" width="150"/>
+				</mx:GridItem>
+			</mx:GridRow>
+			<mx:GridRow width="100%" height="100%">
+				<mx:GridItem width="100%" height="100%">
+					<mx:FormItem label="Hurco program"/>
+				</mx:GridItem>
+				<mx:GridItem width="100%" height="100%" colSpan="3">
+					<mx:TextInput id="HurcoProgram" text="{product.HurcoProgram}" width="150"/>
+				</mx:GridItem>
+			</mx:GridRow>
+			<mx:GridRow width="100%" height="100%">
+				<mx:GridItem width="100%" height="100%">
+					<mx:FormItem label="Customer Notes"/>
+				</mx:GridItem>
+				<mx:GridItem width="100%" height="100%" colSpan="3">
+					<mx:TextArea id="Customer_Notes" text="{product.Customer_Notes}" height="80" width="250"/>
+				</mx:GridItem>
+			</mx:GridRow>
+			<mx:GridRow width="100%" height="100%">
+				<mx:GridItem width="100%" height="100%">
+					<mx:FormItem label="Archived"/>
+				</mx:GridItem>
+				<mx:GridItem width="100%" height="100%">
+					<mx:CheckBox id="archived" selected="{product.archived}"/>
+				</mx:GridItem>
+			</mx:GridRow>
+		</mx:Grid>
+
+		<mx:HBox>
+			<mx:Button id="saveButton"   label="" icon="@Embed(source='assets/save.png')"/>
+			<mx:Button id="cancelButton" label="Cancel"/>
+		</mx:HBox>
+		
+		<mx:HRule width="100%"
+			visible="{product.ProductID != 0}" includeInLayout="{product.ProductID != 0}"/>
+		
+		<products:ProductFilesUpload id="filesUpload" files="{productFiles}" productID="{product.ProductID}"
+				visible="{product.ProductID != 0}" includeInLayout="{product.ProductID != 0}"/>
+	</mx:VBox>
+	
+</mx:HBox>

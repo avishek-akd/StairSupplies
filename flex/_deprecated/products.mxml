@@ -1,0 +1,248 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mx:Application xmlns:mx="http://www.adobe.com/2006/mxml" xmlns:local="*" xmlns:stairsupplies="com.stairsupplies.*" xmlns:products="com.stairsupplies.products.*"
+	backgroundGradientColors="[#ffffff, #ffffff]"
+	paddingTop="0" paddingLeft="0" paddingRight="0" paddingBottom="0" width="100%" height="100%"
+	creationComplete="init();">
+
+
+	<mx:Script source="Util.as"/>
+	<mx:Script>
+		<![CDATA[
+			import com.stairsupplies.events.ProductEditEvent;
+			import com.stairsupplies.events.ProductSaveEvent;
+			import com.stairsupplies.model.Product;
+			
+			import flash.events.MouseEvent;
+			
+			import mx.collections.ArrayCollection;
+			import mx.controls.Alert;
+			import mx.core.FlexGlobals;
+			import mx.messaging.messages.ErrorMessage;
+			import mx.rpc.events.FaultEvent;
+			import mx.rpc.events.ResultEvent;
+			import mx.rpc.remoting.RemoteObject;
+			
+			[Bindable] public var companies:ArrayCollection;
+			[Bindable] public var productTypes:ArrayCollection;
+			[Bindable] public var vendors:ArrayCollection;
+			[Bindable] public var materials:ArrayCollection;
+			[Bindable] public var materialSizes:ArrayCollection;
+			[Bindable] public var finish_options:ArrayCollection;
+			[Bindable] public var unitOfMeasures:ArrayCollection;
+			[Bindable] public var postTopStyles:ArrayCollection;
+			[Bindable] public var postFootStyles:ArrayCollection;
+			
+			[Bindable] public var cfcRootPath:String;
+			[Bindable] public var sessionParams:String;
+			[Bindable] public var pWebRoot:String;
+
+
+			public function init():void {
+				pWebRoot = FlexGlobals.topLevelApplication.parameters.pWebRoot;
+				cfcRootPath   = FlexGlobals.topLevelApplication.parameters.cfcRootPath;
+				sessionParams = FlexGlobals.topLevelApplication.parameters.sessionParams;
+				
+				companyService.addEventListener(FaultEvent.FAULT, faultHandler);
+				productTypeService.addEventListener(FaultEvent.FAULT, faultHandler);
+				productVendorService.addEventListener(FaultEvent.FAULT, faultHandler);
+				materialsService.addEventListener(FaultEvent.FAULT, faultHandler);
+				materialSizesService.addEventListener(FaultEvent.FAULT, faultHandler);
+				finishOptionService.addEventListener(FaultEvent.FAULT, faultHandler);
+				unitOfMeasureService.addEventListener(FaultEvent.FAULT, faultHandler);
+				postTopStyleService.addEventListener(FaultEvent.FAULT, faultHandler);
+				postFootStyleService.addEventListener(FaultEvent.FAULT, faultHandler);
+				productDAO.addEventListener(FaultEvent.FAULT, faultHandler);
+				
+				companyService.getCompanies();
+				productTypeService.getTypes();
+				productVendorService.getVendors();
+				materialsService.getMaterials();
+				materialSizesService.getMaterialSizes();
+				finishOptionService.getFinishOptions();
+				unitOfMeasureService.getUnits();
+				postTopStyleService.getAllTops();
+				postFootStyleService.getAllFoots();
+				
+				productEditForm.addEventListener(ProductSaveEvent.PRODUCT_SAVE_EVENT, ProductSaveEventHandler);
+				productEditForm.addEventListener("cancel", function(event:Event):void {
+					disabledProductEditForm();
+				});
+				
+				productSearch.addEventListener(ProductEditEvent.PRODUCT_EDIT_EVENT, function(event:ProductEditEvent):void {
+					productDAO.read( event.productId );
+				});
+				addProduct.addEventListener(MouseEvent.CLICK, function(event:MouseEvent):void {
+					productDAO.newProduct();
+				});
+			}
+
+
+			private function enableProductEditForm( product:Product ):void {
+				(navigator.getChildAt(1) as HBox).enabled = true;
+				navigator.selectedIndex = 1;
+				productEditForm.showProductForm( product );
+			}
+			
+			
+			private function disabledProductEditForm():void {
+				(navigator.getChildAt(1) as HBox).enabled = false;
+				navigator.selectedIndex = 0;
+			}
+			
+
+			public function handleSimpleResults(event:ResultEvent):void{
+				switch( event.target.name ) {
+					case "getCompanies":
+									companies = event.result as ArrayCollection;
+									break;
+					case "getTypes":
+									productTypes = event.result as ArrayCollection;
+									break;
+					case "getVendors":
+									vendors = event.result as ArrayCollection;
+									break;
+					case "getMaterials":
+									materials = event.result as ArrayCollection;
+									break;
+					case "getMaterialSizes":
+									materialSizes = event.result as ArrayCollection;
+									break;
+					case "getFinishOptions":
+									finish_options = event.result as ArrayCollection;
+									break;
+					case "getUnits":
+									unitOfMeasures = event.result as ArrayCollection;
+									break;
+					case "getAllTops":
+									postTopStyles = event.result as ArrayCollection;
+									break;
+					case "getAllFoots":
+									postFootStyles = event.result as ArrayCollection;
+									break;
+				}
+			}
+
+			
+			private function ProductSaveEventHandler(event:ProductSaveEvent):void {
+				if( event.product.ProductID == 0) {
+					productDAO.create( event.product );
+				} else {
+					productDAO.update( event.product );
+				}
+			}
+
+
+			private function handleProductUpdated(event:ResultEvent):void {
+				disabledProductEditForm();
+
+				productSearch.search();
+			}
+
+			
+			private function handleProductCreate(event:ResultEvent):void {
+				disabledProductEditForm();
+				
+				productSearch.s_product_id.text = String(Product(event.result).ProductID);
+				productSearch.search();
+			}
+
+
+			private function handleReadProduct(event:ResultEvent):void {
+				enableProductEditForm( event.result as Product );
+			}
+
+			
+			private function handleNewProduct(event:ResultEvent):void {
+				enableProductEditForm( event.result as Product );
+			}
+			
+			public function faultHandler(event:FaultEvent):void{
+				verifyAndRedirectIfSessionExpired( event );
+
+				trace(event.fault);
+				trace(event.message);
+				Alert.show((event.fault.faultDetail ? event.fault.faultDetail : event.fault.faultString), 'Error');
+			}
+		]]>
+	</mx:Script>
+
+
+	<mx:RemoteObject id="companyService" showBusyCursor="true"
+		destination="ColdFusion"
+		source="{cfcRootPath}com.stairsupplies.Company">
+		<mx:method name="getCompanies" result="handleSimpleResults(event)"/>		
+	</mx:RemoteObject>
+	<mx:RemoteObject id="productTypeService" showBusyCursor="true"
+		destination="ColdFusion"
+		source="{cfcRootPath}com.stairsupplies.ProductType">
+		<mx:method name="getTypes" result="handleSimpleResults(event)"/>		
+	</mx:RemoteObject>
+	<mx:RemoteObject id="productVendorService" showBusyCursor="true"
+		destination="ColdFusion"
+		source="{cfcRootPath}com.stairsupplies.Vendor">
+		<mx:method name="getVendors" result="handleSimpleResults(event)"/>
+	</mx:RemoteObject>
+	<mx:RemoteObject id="materialsService" showBusyCursor="true"
+		destination="ColdFusion"
+		source="{cfcRootPath}com.stairsupplies.Materials">
+		<mx:method name="getMaterials" result="handleSimpleResults(event)"/>
+	</mx:RemoteObject>
+	<mx:RemoteObject id="materialSizesService" showBusyCursor="true"
+		destination="ColdFusion"
+		source="{cfcRootPath}com.stairsupplies.MaterialSizes">
+		<mx:method name="getMaterialSizes" result="handleSimpleResults(event)"/>
+	</mx:RemoteObject>
+	<mx:RemoteObject id="finishOptionService" showBusyCursor="true"
+		destination="ColdFusion"
+		source="{cfcRootPath}com.stairsupplies.FinishOptionService">
+		<mx:method name="getFinishOptions" result="handleSimpleResults(event)"/>
+	</mx:RemoteObject>
+	<mx:RemoteObject id="unitOfMeasureService" showBusyCursor="true"
+		destination="ColdFusion"
+		source="{cfcRootPath}com.stairsupplies.UnitOfMeasure">
+		<mx:method name="getUnits" result="handleSimpleResults(event)"/>		
+	</mx:RemoteObject>
+	<mx:RemoteObject id="postTopStyleService" showBusyCursor="true"
+		destination="ColdFusion"
+		source="{cfcRootPath}com.stairsupplies.PostTopStyle">
+		<mx:method name="getAllTops" result="handleSimpleResults(event)"/>		
+	</mx:RemoteObject>
+	<mx:RemoteObject id="postFootStyleService" showBusyCursor="true"
+		destination="ColdFusion"
+		source="{cfcRootPath}com.stairsupplies.PostFootStyle">
+		<mx:method name="getAllFoots" result="handleSimpleResults(event)"/>		
+	</mx:RemoteObject>
+	<mx:RemoteObject id="productDAO" destination="ColdFusion"
+					source="{cfcRootPath}com.stairsupplies.ProductDAO"
+					showBusyCursor="true">
+		<mx:method name="newProduct" result="handleNewProduct(event)" />
+		<mx:method name="read" result="handleReadProduct(event)" />
+		<mx:method name="create" result="handleProductCreate(event);" />
+		<mx:method name="update" result="handleProductUpdated(event);" />
+	</mx:RemoteObject>
+
+
+	<mx:TabNavigator width="100%" height="100%" id="navigator" creationPolicy="all">
+	
+		<mx:VBox width="100%" height="100%" label="Search Products">
+			<mx:LinkButton label="Add product" icon="@Embed(source='assets/add.png')" id="addProduct"/>
+
+			<products:ProductSearchForm id="productSearch"
+				companies="{companies}" productTypes="{productTypes}" vendors="{vendors}" materials="{materials}"/>
+		</mx:VBox>
+
+		<mx:HBox height="100%" label="Product" enabled="false">
+			<products:ProductEditForm id="productEditForm"
+				companies="{companies}" productTypes="{productTypes}" vendors="{vendors}"
+				materials="{materials}" materialSizes="{materialSizes}" unitOfMeasures="{unitOfMeasures}" finish_options="{finish_options}"
+				postTopStyles="{postTopStyles}" postFootStyles="{postFootStyles}"/>	
+		</mx:HBox>
+		
+		<mx:HBox height="100%" width="100%" label="Upload Products" enabled="true">
+			<products:ProductsUploadForm height="100%" width="100%"/>
+		</mx:HBox>
+
+	</mx:TabNavigator>
+
+	
+</mx:Application>

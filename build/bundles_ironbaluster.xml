@@ -1,0 +1,161 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project name="Build JS and CSS bundles" default="all" basedir=".">
+	<target name="all" depends="jquery-menu,validation,jquery_ui-validation-jqgrid"/>
+
+
+    <property name="DEST"    value="../htdocs/ironbaluster/common/bundles" />
+    <property name="COMMON"  value="../htdocs/ironbaluster/common" />
+    <property name="SRC_DIR" value="src" />
+
+
+	<target name="jquery">
+		<concat destfile="${DEST}/jquery.js">
+			<filelist files="${SRC_DIR}/jquery-3.2.1.js"></filelist>
+		</concat>
+
+		<antcall target="min">
+		    <param name="inputFile"  value="${DEST}/jquery.js"/>
+		    <param name="outputFile" value="${DEST}/jquery.min.js"/>
+		</antcall>
+
+		<echo message="jQuery 3.2.1 built"/>
+	</target>
+
+
+	<target name="jquery-menu" depends="jquery">
+		<concat destfile="${DEST}/jquery-menu.js">
+			<filelist files="${DEST}/jquery.js"></filelist>
+			<filelist files="${SRC_DIR}/superfish-1.7.9/src/js/superfish.js"></filelist>
+		</concat>
+
+		<antcall target="min">
+		    <param name="inputFile"  value="${DEST}/jquery-menu.js"/>
+		    <param name="outputFile" value="${DEST}/jquery-menu.min.js"/>
+		</antcall>
+
+		<echo message="jquery-menu.js built"/>
+	</target>
+
+
+	<target name="jquery_ui-validation-jqgrid" depends="jquery_ui,validation,jqgrid">
+		<concat destfile="${DEST}/jquery_ui-validation-jqgrid.js">
+			<filelist files="${DEST}/jquery_ui.js"></filelist>
+			<filelist files="${DEST}/validation.js"></filelist>
+			<filelist files="${DEST}/jqgrid.js"></filelist>
+		</concat>
+
+		<antcall target="min">
+		    <param name="inputFile"  value="${DEST}/jquery_ui-validation-jqgrid.js"/>
+		    <param name="outputFile" value="${DEST}/jquery_ui-validation-jqgrid.min.js"/>
+		</antcall>
+
+		<echo message="jquery_ui-validation-jqgrid.js built"/>
+	</target>
+
+
+	<target name="jquery_ui">
+		<concat destfile="${DEST}/jquery_ui.js">
+			<filelist files="${SRC_DIR}/jquery.ui/version.js"></filelist>
+			<filelist files="${SRC_DIR}/jquery.ui/widget.js"></filelist>
+			<filelist files="${SRC_DIR}/jquery.ui/plugin.js"></filelist>
+			<filelist files="${SRC_DIR}/jquery.ui/position.js"></filelist>
+
+			<filelist files="${SRC_DIR}/jquery.ui/data.js"></filelist>
+			<filelist files="${SRC_DIR}/jquery.ui/disable-selection.js"></filelist>
+			<filelist files="${SRC_DIR}/jquery.ui/escape-selector.js"></filelist>
+			<filelist files="${SRC_DIR}/jquery.ui/focusable.js"></filelist>
+			<filelist files="${SRC_DIR}/jquery.ui/form.js"></filelist>
+			<filelist files="${SRC_DIR}/jquery.ui/form-reset-mixin.js"></filelist>
+			<filelist files="${SRC_DIR}/jquery.ui/keycode.js"></filelist>
+			<filelist files="${SRC_DIR}/jquery.ui/labels.js"></filelist>
+			<filelist files="${SRC_DIR}/jquery.ui/safe-active-element.js"></filelist>
+			<filelist files="${SRC_DIR}/jquery.ui/safe-blur.js"></filelist>
+			<filelist files="${SRC_DIR}/jquery.ui/scroll-parent.js"></filelist>
+			<filelist files="${SRC_DIR}/jquery.ui/tabbable.js"></filelist>
+			<filelist files="${SRC_DIR}/jquery.ui/unique-id.js"></filelist>
+
+			<filelist files="${SRC_DIR}/jquery.ui/widgets/mouse.js"></filelist>
+			<filelist files="${SRC_DIR}/jquery.ui/widgets/draggable.js"></filelist>
+			<filelist files="${SRC_DIR}/jquery.ui/widgets/droppable.js"></filelist>
+			<filelist files="${SRC_DIR}/jquery.ui/widgets/sortable.js"></filelist>
+			<filelist files="${SRC_DIR}/jquery.ui/widgets/button.js"></filelist>
+			<filelist files="${SRC_DIR}/jquery.ui/widgets/checkboxradio.js"></filelist>
+			<filelist files="${SRC_DIR}/jquery.ui/widgets/controlgroup.js"></filelist>
+			<filelist files="${SRC_DIR}/jquery.ui/widgets/dialog.js"></filelist>
+			<filelist files="${SRC_DIR}/jquery.ui/widgets/tabs.js"></filelist>
+			<filelist files="${SRC_DIR}/jquery.ui/widgets/accordion.js"></filelist>
+			<filelist files="${SRC_DIR}/jquery.ui/widgets/autocomplete.js"></filelist>
+			<filelist files="${SRC_DIR}/jquery.ui/widgets/datepicker.js"></filelist>
+			<filelist files="${SRC_DIR}/jquery.ui/widgets/menu.js"></filelist>
+			<filelist files="${SRC_DIR}/jquery.ui/widgets/selectmenu.js"></filelist>
+
+			<filelist files="${SRC_DIR}/jquery.ui/effect.js"></filelist>
+			<filelist files="${SRC_DIR}/jquery.ui/effects/effect-fade.js"></filelist>
+			<filelist files="${SRC_DIR}/jquery.ui/effects/effect-highlight.js"></filelist>
+
+			<filelist files="${SRC_DIR}/jquery.ui.buttonEx.js"></filelist>
+			<filelist files="${SRC_DIR}/jquery.ui.selectmenuEx.js"></filelist>
+		</concat>
+
+		<antcall target="min">
+		    <param name="inputFile"  value="${DEST}/jquery_ui.js"/>
+		    <param name="outputFile" value="${DEST}/jquery_ui.min.js"/>
+		</antcall>
+
+		<echo message="jQuery UI 1.12.1 built"/>
+	</target>
+
+
+	<target name="validation">
+		<concat destfile="${DEST}/validation.js">
+			<filelist files="${SRC_DIR}/jquery.form.js"></filelist>
+			<filelist files="${SRC_DIR}/jquery.validate.js"></filelist>
+			<filelist files="${SRC_DIR}/jquery.validate-custom.js"></filelist>
+		</concat>
+
+		<antcall target="min">
+		    <param name="inputFile"  value="${DEST}/validation.js"/>
+		    <param name="outputFile" value="${DEST}/validation.min.js"/>
+		</antcall>
+
+		<echo message="Validation 1.17.0 built"/>
+	</target>
+
+
+	<target name="jqgrid">
+		<concat destfile="${DEST}/jqgrid.js">
+			<filelist files="${SRC_DIR}/jqgrid/js/i18n/grid.locale-en.js"></filelist>
+			<filelist files="${SRC_DIR}/jqgrid/js/grid.base.js"></filelist>
+			<filelist files="${SRC_DIR}/jqgrid/js/jquery.fmatter.js"></filelist>
+			<filelist files="${SRC_DIR}/jqgrid/js/grid.custom.js"></filelist>
+			<filelist files="${SRC_DIR}/jqgrid/js/grid.common.js"></filelist>
+			<filelist files="${SRC_DIR}/jqgrid/js/grid.jqueryui.js"></filelist>
+			<filelist files="${SRC_DIR}/jqgrid/js/grid.formedit.js"></filelist>
+			<filelist files="${SRC_DIR}/jqgrid/js/grid.subgrid.js"></filelist>
+			<filelist files="${SRC_DIR}/jqgrid/js/grid.treegrid.js"></filelist>
+
+			<filelist files="${SRC_DIR}/jqgrid/js/grid.celledit.js"></filelist>
+			<filelist files="${SRC_DIR}/jqgrid/js/grid.inlinedit.js"></filelist>
+		</concat>
+
+		<antcall target="min" >
+		    <param name="inputFile"  value="${DEST}/jqgrid.js"/>
+		    <param name="outputFile" value="${DEST}/jqgrid.min.js"/>
+		</antcall>
+
+		<echo message="jqGrid 4.8.2 built"/>
+	</target>
+
+
+	<target name="min">
+		<basename property="outputFileBasename" file="${outputFile}"/>
+		<basename property="inputFileBasename" file="${inputFile}"/>
+		<dirname property="outputDir" file="${outputFile}"/>
+
+		<java jar="google-compiler.jar" failonerror="true" fork="true" dir="${outputDir}">
+			<arg line="--warning_level QUIET --js ${inputFileBasename} --js_output_file ${outputFileBasename} --create_source_map ${outputFileBasename}.map --output_wrapper &quot;%output% &#10; //# sourceMappingURL=${outputFileBasename}.map&quot;"/>
+		</java>
+	</target>
+
+
+</project>

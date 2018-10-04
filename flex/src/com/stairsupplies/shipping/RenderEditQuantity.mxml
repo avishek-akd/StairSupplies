@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mx:HBox xmlns:mx="http://www.adobe.com/2006/mxml" implements="mx.managers.IFocusManagerComponent" width="100%" horizontalAlign="center"
+		initialize="init()">
+
+	<mx:Script>
+		<![CDATA[
+			private function init():void
+			{
+				inputField.addEventListener(Event.CHANGE, function(event:Event):void{
+					data.quantityToShip = inputField.text;
+					dispatchEvent(new Event('shipmentItemsChanged', true));
+				});
+			}
+			
+			override public function setFocus():void
+			{
+				inputField.setFocus()
+			}
+
+			/*  Default editorDataField value is "text" so make sure that we have it otherwise itemEditEnd will bomb  */
+			public function get text():String
+			{
+				return "";
+			}
+		]]>
+	</mx:Script>
+
+	<!--
+		Watch every change to give real-time feedback.
+	-->
+	<mx:TextInput id="inputField" width="60"
+			enter="dispatchEvent(new Event('enter', true));"
+			text="{data.quantityToShip}" errorString="{data.errorStringQuantity}" restrict="0-9."/>
+</mx:HBox>

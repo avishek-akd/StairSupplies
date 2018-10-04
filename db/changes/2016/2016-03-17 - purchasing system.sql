@@ -1,0 +1,2 @@
+ALTER TABLE `TblVendor`
+	ADD COLUMN `PurchasingRules` VARCHAR(500) NULL DEFAULT NULL AFTER `primaryEmail`;

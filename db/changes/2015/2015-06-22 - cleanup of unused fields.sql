@@ -1,0 +1,37 @@
+ALTER TABLE `TblOrdersBOM`
+	DROP COLUMN `_unused_Terms`,
+	DROP COLUMN `_unused_ShipAddress4`,
+	DROP COLUMN `_unused_BillAddress4`,
+	DROP COLUMN `_unused_Remake_UserLastName`,
+	DROP COLUMN `_unused_estimate_UserLastName`,
+	DROP COLUMN `_unused_ordered_UserLastName`,
+	DROP COLUMN `_unused_released_userlastname`,
+	DROP COLUMN `_unused_cancelled_userLastName`,
+	DROP COLUMN `_unused_paid_userLastName`,
+	DROP COLUMN `_unused_DueDate_userlastname`,
+	DROP COLUMN `_unused_credit_UserLastName`,
+	DROP COLUMN `_unused_invoiced_UserLastName`;
+ALTER TABLE `CustomerContact`
+	DROP COLUMN `_unused_ContactAddress4`,
+	DROP COLUMN `_unused_BillingEmails`,
+	DROP COLUMN `_unused_iPhoneToken`;
+ALTER TABLE `Customers`
+	DROP COLUMN `_unused_Terms`,
+	DROP COLUMN `_unused_BillAddress4`,
+	DROP COLUMN `_unused_ShipAddress4`,
+	DROP COLUMN `_unused_CustomerType`,
+	DROP COLUMN `_unused_defaultShippingMethodID`;
+ALTER TABLE `TblOrdersBOM_Items`
+	DROP COLUMN `_unused_PRC_Initials`,
+	DROP COLUMN `_unused_Final_Initials`,
+	DROP COLUMN `_unused_Prefinishing_Complete_Initials`;
+ALTER TABLE `Products`
+	DROP COLUMN `_unused_PoundsOfPolyurethane`,
+	DROP COLUMN `_unused_WebsitePartNumber`;
+ALTER TABLE `tbl_settings_global`
+	DROP COLUMN `_unused_conversion_factor_machine1`,
+	DROP COLUMN `_unused_conversion_factor_machine2`,
+	DROP COLUMN `_unused_stain_price_multiplier`;
+ALTER TABLE `tbl_settings_per_company`
+	DROP COLUMN `_unused_d_email_support`,
+	DROP COLUMN `_unused_d_email_sales`;

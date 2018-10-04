@@ -1,0 +1,145 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mx:VBox xmlns:mx="http://www.adobe.com/2006/mxml" creationComplete="init()" xmlns:components="com.hillelcoren.components.*">
+	
+	
+	<mx:Metadata>
+		[Event(name="changesComplete", type="flash.events.Event")]
+		[Event(name="uploadIOError", type="flash.events.IOErrorEvent")]
+		[Event(name="uploadSecurityError", type="flash.events.SecurityErrorEvent")]
+	</mx:Metadata>
+	
+	
+	<mx:Script>
+		<![CDATA[
+			import mx.collections.ArrayCollection;
+			import mx.controls.Alert;
+			import mx.core.FlexGlobals;
+			import mx.events.CloseEvent;
+			import mx.rpc.events.FaultEvent;
+
+			[Bindable]
+			public var files:ArrayCollection;
+			[Bindable]
+			public var productID:int;
+			private var _productIDToDelete:int;
+
+			private var _refAddFiles:FileReferenceList;	
+			private var _refUploadFile:FileReference;
+			private var _numCurrentUpload:Number = 0;			
+
+			
+			private function init():void {
+				productService.addEventListener(FaultEvent.FAULT, FlexGlobals.topLevelApplication.faultHandler);
+				
+				uploadFile.addEventListener(MouseEvent.CLICK, function(event:MouseEvent):void {
+					_refAddFiles = new FileReferenceList();
+					_refAddFiles.addEventListener(Event.SELECT, onSelectFile);
+					_refAddFiles.browse([new FileFilter("All", "*.*")]);
+				});
+			}
+			
+			private function onSelectFile(event:Event):void {
+				if (_refAddFiles.fileList.length > 0) {
+					uploadNextFile();
+				}
+			}
+
+			private function uploadNextFile():void {
+				if (_refAddFiles.fileList.length > 0) {
+					// Variables to send along with upload
+					var sendVars:URLVariables = new URLVariables();
+					sendVars.productID = productID;
+					
+					var request:URLRequest = new URLRequest();
+					request.data = sendVars;
+				    request.url = "/ironbaluster/products/upload_file.cfm;" + FlexGlobals.topLevelApplication.sessionParams;
+				    request.method = URLRequestMethod.POST;
+				    // CHECK if needed _refUploadFile = new FileReference();
+				    _refUploadFile = _refAddFiles.fileList[_numCurrentUpload];
+				   	_refUploadFile.addEventListener(Event.COMPLETE, onUploadComplete);
+				    _refUploadFile.addEventListener(IOErrorEvent.IO_ERROR, onUploadIoError);
+				  	_refUploadFile.addEventListener(SecurityErrorEvent.SECURITY_ERROR, onUploadSecurityError);
+				    _refUploadFile.upload(request, "file", false);
+				}
+			}
+			
+			
+			private function onUploadComplete(event:Event):void {
+				_numCurrentUpload++;				
+				if (_numCurrentUpload < _refAddFiles.fileList.length) {
+					uploadNextFile();
+				} else {
+					clearUpload();
+					dispatchEvent(new Event("changesComplete"));
+				}
+			}
+			
+			
+			// Cancel and clear eventlisteners on last upload
+			private function clearUpload():void {
+				_refUploadFile.removeEventListener(Event.COMPLETE, onUploadComplete);
+				_refUploadFile.removeEventListener(IOErrorEvent.IO_ERROR, onUploadIoError);
+				_refUploadFile.removeEventListener(SecurityErrorEvent.SECURITY_ERROR, onUploadSecurityError);
+				_refUploadFile.cancel();
+				_numCurrentUpload = 0;
+			}
+			
+			// Called on upload io error
+			private function onUploadIoError(event:IOErrorEvent):void {
+				var evt:IOErrorEvent = new IOErrorEvent("uploadIoError", false, false, event.text);
+				dispatchEvent(evt);
+			}
+			
+			// Called on upload security error
+			private function onUploadSecurityError(event:SecurityErrorEvent):void {
+				var evt:SecurityErrorEvent = new SecurityErrorEvent("uploadSecurityError", false, false, event.text);
+				dispatchEvent(evt);
+			}
+
+			private function openLink(event:MouseEvent):void {
+				navigateToURL(new URLRequest(event.currentTarget.getRepeaterItem().fileUrl), '_blank');
+			}
+
+			private function deletePDF(event:MouseEvent):void {
+				Alert.show("Are you sure you want to delete the file ?", "Warning", Alert.OK|Alert.CANCEL, this, deletePDFConfirmation, null, Alert.OK);
+
+				_productIDToDelete = event.currentTarget.getRepeaterItem().id;
+			}
+
+			public function deletePDFConfirmation(eventObj:CloseEvent):void
+			{
+				if(eventObj.detail==Alert.OK)
+					productService.deleteFile( _productIDToDelete );
+			}
+
+			private function handleDeleteFile(event:Event):void{
+				dispatchEvent(new Event("changesComplete"));	
+			}
+		]]>
+	</mx:Script>
+			
+
+	<mx:RemoteObject id="productService" showBusyCursor="true" destination="ColdFusion"
+		source="{FlexGlobals.topLevelApplication.cfcRootPath}com.stairsupplies.ProductService">
+		<mx:method name="deleteFile" result="handleDeleteFile( event )"/>
+	</mx:RemoteObject>
+	
+
+	<mx:Tile>
+		<mx:Repeater id="filesRep" dataProvider="{files}">
+			<mx:Canvas borderColor="#484848" borderStyle="solid">
+				<!-- TODO: FIXME:  borderThickness="1" -->
+				
+				<mx:Image source="{filesRep.currentItem.webDirectory}{filesRep.currentItem.thumbnail}" click="openLink(event);"
+					useHandCursor="true" buttonMode="true" toolTip="{filesRep.currentItem.title} - {filesRep.currentItem.file_name}"
+						width="{filesRep.currentItem.thumbnail_width}" height="{filesRep.currentItem.thumbnail_height}"/>
+				
+				<mx:Image source="@Embed(source='assets/delete.png')" click="deletePDF(event);"
+					useHandCursor="true" buttonMode="true" bottom="5" right="5"/> 
+			</mx:Canvas>
+		</mx:Repeater>
+	</mx:Tile>
+	
+
+	<mx:Button id="uploadFile" label="Add files"/>
+</mx:VBox>

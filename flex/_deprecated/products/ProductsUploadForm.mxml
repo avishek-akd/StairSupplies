@@ -1,0 +1,93 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mx:Form xmlns:mx="http://www.adobe.com/2006/mxml" creationComplete="init();">
+	
+	<mx:Script>
+		<![CDATA[
+			import mx.core.FlexGlobals;
+			
+			private var _fileToUpload:FileReference;
+			private var _fileBrowser:FileReferenceList;/*  Used to allow the user to select a file for upload  */
+			
+			private function init():void {
+				uploadFileButton.addEventListener(MouseEvent.CLICK, function(event:MouseEvent):void {
+					_fileBrowser = new FileReferenceList();
+					_fileBrowser.addEventListener(Event.SELECT, onSelectFile);
+					_fileBrowser.browse([new FileFilter("MS Excel", "*.xls")]);
+				});
+				password.addEventListener(KeyboardEvent.KEY_UP, function(event:KeyboardEvent):void {
+					/*  Upload button is enabled only if we have the password filled in  */
+					uploadFileButton.enabled = (password.text != ""); 
+				});
+			}
+
+			private function onSelectFile(event:Event):void {
+				if (_fileBrowser.fileList.length > 0) {
+					uploadFileButton.enabled = false;
+					uploadFile();
+				}
+			}
+
+			private function uploadFile():void {
+				if (_fileBrowser.fileList.length > 0) {
+					// Variables to send along with upload
+					var sendVars:URLVariables = new URLVariables();
+
+					var request:URLRequest = new URLRequest();
+					request.url = "/ironbaluster/products/upload_products.cfm;" + FlexGlobals.topLevelApplication.sessionParams + "?password=" + password.text + "&rn=" + Math.random();
+					request.data = sendVars;
+					request.method = URLRequestMethod.POST;
+					
+					uploadMessages.htmlText = "Processing file";
+
+					_fileToUpload = _fileBrowser.fileList[0];
+					_fileToUpload.addEventListener(DataEvent.UPLOAD_COMPLETE_DATA, onUploadComplete);
+					_fileToUpload.addEventListener(IOErrorEvent.IO_ERROR, onUploadIoError);
+					_fileToUpload.addEventListener(SecurityErrorEvent.SECURITY_ERROR, onUploadSecurityError);
+					_fileToUpload.upload(request, "file", false);
+				}
+			}
+			
+			private function onUploadComplete(event:DataEvent):void {
+				/*  Don't leave event handlers hanging */
+				_fileToUpload.removeEventListener(Event.COMPLETE, onUploadComplete);
+				_fileToUpload.removeEventListener(IOErrorEvent.IO_ERROR, onUploadIoError);
+				_fileToUpload.removeEventListener(SecurityErrorEvent.SECURITY_ERROR, onUploadSecurityError);
+				_fileToUpload.cancel();
+
+				uploadFileButton.enabled = true;
+				uploadMessages.htmlText = String(event.data);
+			}
+			
+			private function onUploadIoError(event:IOErrorEvent):void {
+				var evt:IOErrorEvent = new IOErrorEvent("uploadIoError", false, false, event.text);
+				dispatchEvent(evt);
+
+				uploadFileButton.enabled = true;
+			}
+			
+			private function onUploadSecurityError(event:SecurityErrorEvent):void {
+				var evt:SecurityErrorEvent = new SecurityErrorEvent("uploadSecurityError", false, false, event.text);
+				dispatchEvent(evt);
+
+				uploadFileButton.enabled = true;
+			}
+		]]>
+	</mx:Script>
+	
+	
+	<mx:StringValidator source="{password}" property="text" required="true"/>	
+	
+	
+	<mx:Text width="100%"> 
+		<mx:htmlText><![CDATA[<strong>Notes</strong>:<ul><li>The file must have the same fields as the downloaded file (CompanyID is ignored for update but is used for new products).</li><li>The information in the file replaces the information in the products table for all the fields.</li></ul>]]></mx:htmlText> 
+	</mx:Text> 
+	<mx:FormItem label="Products file (.xls)">
+		<mx:Button label="Choose file" id="uploadFileButton" enabled="false"/>	
+	</mx:FormItem>
+	<mx:FormItem label="Password">
+		<mx:TextInput displayAsPassword="true" id="password"/>
+	</mx:FormItem>
+	<mx:FormItem label="Result" width="100%" height="100%">
+		<mx:TextArea width="100%" height="100%" id="uploadMessages"/>
+	</mx:FormItem>
+</mx:Form>

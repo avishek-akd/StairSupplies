@@ -1,0 +1,398 @@
+{
+	"auto_complete":
+	{
+		"selected_items":
+		[
+			[
+				"nu",
+				"null=\"true\"	null"
+			],
+			[
+				"cfquery",
+				"cfqueryparam	Tag (cmfl)"
+			],
+			[
+				"discount",
+				"discountPercent"
+			],
+			[
+				"setDis",
+				"setDiscountAmount"
+			],
+			[
+				"setDiscount",
+				"setDiscountPercent"
+			],
+			[
+				"calculate",
+				"calculateDiscountAmount"
+			],
+			[
+				"con",
+				"console"
+			],
+			[
+				"lo",
+				"log"
+			],
+			[
+				"sele",
+				"selected"
+			]
+		]
+	},
+	"buffers":
+	[
+		{
+			"file": "db/2015-04-21 - remove wildwood and nu-wood.sql",
+			"settings":
+			{
+				"buffer_size": 2935,
+				"line_ending": "Unix"
+			}
+		},
+		{
+			"file": "htdocs/ironbaluster/tools/delete_files_not_in_database.cfm",
+			"settings":
+			{
+				"buffer_size": 3217,
+				"line_ending": "Unix"
+			}
+		}
+	],
+	"build_system": "",
+	"command_palette":
+	{
+		"height": 104.0,
+		"selected_items":
+		[
+			[
+				"insta",
+				"Package Control: Install Package"
+			],
+			[
+				"install",
+				"Package Control: Install Package"
+			],
+			[
+				"Package Control: ",
+				"Package Control: Install Package"
+			],
+			[
+				"Package Control: d",
+				"Package Control: Discover Packages"
+			]
+		],
+		"width": 416.0
+	},
+	"console":
+	{
+		"height": 329.0
+	},
+	"distraction_free":
+	{
+		"menu_visible": true,
+		"show_minimap": false,
+		"show_open_files": false,
+		"show_tabs": false,
+		"side_bar_visible": false,
+		"status_bar_visible": false
+	},
+	"file_history":
+	[
+		"/Y/len/intranet/htdocs/customers/_tags/cf_header_user.cfm",
+		"/Y/len/intranet/htdocs/customers/dsp_header.cfm",
+		"/Y/len/intranet/htdocs/customers/viewrail.css",
+		"/Y/len/intranet/htdocs/customers/style.css",
+		"/Y/len/intranet/htdocs/customers/quote/create_quote_request.cfm",
+		"/Y/len/intranet/htdocs/customers/quote/index.cfm",
+		"/Y/len/intranet/htdocs/customers/profile/index.cfm",
+		"/Y/len/intranet/htdocs/customers/orders/index.cfm",
+		"/Y/len/intranet/htdocs/ironbaluster/sales/orders/product/product_costs.cfm",
+		"/Y/len/intranet/htdocs/ironbaluster/sales/orders/product/product_quantity.cfm",
+		"/Y/len/intranet/htdocs/ironbaluster/sales/orders/product/product_special.cfm",
+		"/Y/len/intranet/htdocs/ironbaluster/sales/orders/product/product.cfm",
+		"/Y/len/intranet/htdocs/ironbaluster/sales/orders/autocomplete_product.cfm",
+		"/Y/len/intranet/htdocs/ironbaluster/sales/orders/product/get_finish_options.cfm",
+		"/Y/len/intranet/htdocs/ironbaluster/sales/orders/product/product_js.cfm",
+		"/Y/len/intranet/htdocs/ironbaluster/dsp_header.cfm",
+		"/Y/len/intranet/htdocs/ironbaluster/_tags/cf_header_user.cfm",
+		"/Y/len/intranet/htdocs/ironbaluster/sales/orders/product/product_totals.cfm",
+		"/Y/len/intranet/htdocs/ironbaluster/sales/inventory/save_inventory.cfm",
+		"/Y/len/intranet/htdocs/ironbaluster/sales/inventory/index.cfm",
+		"/Y/len/intranet/htdocs/ironbaluster/com/stairsupplies/InventoryService.cfc",
+		"/Y/len/intranet/htdocs/ironbaluster/purchasing/wood_type/dsp_search_wood_type.cfm",
+		"/C/Users/mack/AppData/Roaming/Sublime Text 2/Packages/User/Preferences.sublime-settings",
+		"/Y/len/intranet/htdocs/ironbaluster/products/product_history.cfm",
+		"/Y/len/intranet/htdocs/ironbaluster/sales/orders/product/convert_to_special_product.cfm",
+		"/Y/len/intranet/htdocs/ironbaluster/sales/cf_files_upload_view.cfm",
+		"/Y/len/intranet/htdocs/ironbaluster/common/orders-edit.js",
+		"/Y/len/intranet/db/2015-05-03 - finish options depend on the wood type.sql",
+		"/Y/len/intranet/htdocs/ironbaluster/sales/finish_options/index.cfm",
+		"/Y/len/intranet/htdocs/ironbaluster/purchasing/wood_type/index.cfm",
+		"/Y/len/intranet/htdocs/ironbaluster/purchasing/wood_type/edit_wood_type/dsp_input.cfm",
+		"/Y/len/intranet/htdocs/ironbaluster/products/product_types/product_type.cfm",
+		"/Y/len/intranet/htdocs/ironbaluster/purchasing/wood_type/edit_wood_type/app_locals.cfm",
+		"/Y/len/intranet/htdocs/ironbaluster/purchasing/wood_type/edit_wood_type/act_process.cfm",
+		"/Y/len/intranet/htdocs/ironbaluster/purchasing/wood_type/add_wood_type/app_locals.cfm",
+		"/Y/len/intranet/htdocs/ironbaluster/purchasing/wood_type/add_wood_type/dsp_input.cfm",
+		"/Y/len/intranet/htdocs/ironbaluster/purchasing/wood_type/add_wood_type/act_process.cfm",
+		"/Y/len/intranet/htdocs/ironbaluster/purchasing/wood_type/edit_wood_type/dsp_process.cfm",
+		"/Y/len/intranet/htdocs/ironbaluster/sales/orders/product/save_product.cfm",
+		"/Y/len/intranet/htdocs/ironbaluster/sales/orders/tab_order_ack.cfm",
+		"/Y/len/intranet/htdocs/ironbaluster/sales/orders/send_order_ack.cfm",
+		"/Y/len/intranet/htdocs/ironbaluster/sales/finish_options/get_finish_options.cfm",
+		"/Y/len/intranet/htdocs/ironbaluster/sales/finish_options/finish_option.cfm",
+		"/Y/len/intranet/htdocs/ironbaluster/sales/finish_options/save_finish_option.cfm",
+		"/Y/len/intranet/aaaaaaaaa.sublime-project",
+		"/Y/len/intranet/htdocs/ironbaluster/sales/orders/product/product_delete.cfm",
+		"/Y/len/intranet/db/re-calculate purchase price on all products.sql",
+		"/Y/len/intranet/htdocs/customers/dsp_header_login.cfm",
+		"/Y/len/intranet/htdocs/customers/index.cfm",
+		"/Y/len/intranet/htdocs/index.cfm",
+		"/Y/len/intranet/htdocs/robots.txt",
+		"/C/Users/mack/AppData/Roaming/Sublime Text 2/Packages/User/Default (Windows).sublime-keymap"
+	],
+	"find":
+	{
+		"height": 34.0
+	},
+	"find_in_files":
+	{
+		"height": 0.0,
+		"where_history":
+		[
+		]
+	},
+	"find_state":
+	{
+		"case_sensitive": false,
+		"find_history":
+		[
+			"aaaaaaaaa",
+			"helper",
+			"css",
+			"Cable Rail",
+			"</p>",
+			"<p>",
+			"36\" ",
+			"Surface",
+			"CRV",
+			"$(\"##FinishOptionID\")",
+			"elem",
+			"WoodTypeID",
+			"productDiscountPrice",
+			"			\n",
+			"				\n",
+			"this.finishOption",
+			"serializ",
+			"serialize",
+			"Attributes.finishOptions",
+			"this.finishOptions",
+			"f_is_ac",
+			"f_is_a",
+			"WoodTypeID",
+			"\"form\"",
+			"changeProduct",
+			"form",
+			"$dialog",
+			"dialog",
+			"product_convert_to_special",
+			"copy",
+			"Purchase_Price",
+			"ProductTypeIncludeIDs",
+			"();\n",
+			"orderHistory",
+			"form.memo",
+			"orderItemId",
+			"\n			",
+			"editOrderItem",
+			"console",
+			"#finishOption",
+			"console.",
+			"console.log",
+			"form.FinishOptionID",
+			"console.",
+			"console.log",
+			"priceChanged",
+			"\n				",
+			"discountPercentChanged",
+			"getFinishOptionPrice",
+			"DefaultFinishOptionID",
+			"parseFloat",
+			"HACK",
+			"ProductUnitPrice",
+			"== ''",
+			"= 0",
+			"== 0",
+			"FinishOptionID",
+			"#FinishOptionID",
+			";\n",
+			"getPriceWithFinish",
+			"getFinishOptionPrice",
+			"getPriceList",
+			"roundNumber",
+			"formatCurrency",
+			"listPriceWithFinish",
+			"priceWithStandardFinish",
+			"listPriceWithDefaultFinish",
+			"listPrice",
+			"list",
+			"finishPriceMultiplier",
+			"FinishPrice",
+			"finishPriceMultiplier",
+			"setHTMLPrice",
+			"showFinishPrice",
+			"finishOptions",
+			"highlight",
+			"setHTMLPrice",
+			"unitPrice",
+			"showFinishPrice",
+			"setProductBeanPrice",
+			"<",
+			"setProductBeanPrice",
+			"<",
+			"\n				",
+			"setProductBeanPrice",
+			"setHTMLPrice",
+			"setProductBeanPrice",
+			" \n",
+			"			\n",
+			"roundNumber"
+		],
+		"highlight": true,
+		"in_selection": false,
+		"preserve_case": false,
+		"regex": false,
+		"replace_history":
+		[
+			"</div>",
+			"<div>"
+		],
+		"reverse": false,
+		"show_context": true,
+		"use_buffer2": true,
+		"whole_word": false,
+		"wrap": true
+	},
+	"groups":
+	[
+		{
+			"selected": 1,
+			"sheets":
+			[
+				{
+					"buffer": 0,
+					"file": "db/2015-04-21 - remove wildwood and nu-wood.sql",
+					"settings":
+					{
+						"buffer_size": 2935,
+						"regions":
+						{
+						},
+						"selection":
+						[
+							[
+								144,
+								145
+							]
+						],
+						"settings":
+						{
+							"syntax": "Packages/SQL/SQL.tmLanguage"
+						},
+						"translation.x": 0.0,
+						"translation.y": 0.0,
+						"zoom_level": 1.0
+					},
+					"type": "text"
+				},
+				{
+					"buffer": 1,
+					"file": "htdocs/ironbaluster/tools/delete_files_not_in_database.cfm",
+					"settings":
+					{
+						"buffer_size": 3217,
+						"regions":
+						{
+						},
+						"selection":
+						[
+							[
+								362,
+								362
+							]
+						],
+						"settings":
+						{
+							"syntax": "Packages/ColdFusion/HTML+CFML.tmLanguage",
+							"translate_tabs_to_spaces": false
+						},
+						"translation.x": 0.0,
+						"translation.y": 0.0,
+						"zoom_level": 1.0
+					},
+					"type": "text"
+				}
+			]
+		}
+	],
+	"incremental_find":
+	{
+		"height": 0.0
+	},
+	"input":
+	{
+		"height": 34.0
+	},
+	"layout":
+	{
+		"cells":
+		[
+			[
+				0,
+				0,
+				1,
+				1
+			]
+		],
+		"cols":
+		[
+			0.0,
+			1.0
+		],
+		"rows":
+		[
+			0.0,
+			1.0
+		]
+	},
+	"menu_visible": true,
+	"replace":
+	{
+		"height": 62.0
+	},
+	"save_all_on_build": true,
+	"select_file":
+	{
+		"height": 0.0,
+		"selected_items":
+		[
+		],
+		"width": 0.0
+	},
+	"select_project":
+	{
+		"height": 0.0,
+		"selected_items":
+		[
+		],
+		"width": 0.0
+	},
+	"show_minimap": false,
+	"show_open_files": true,
+	"show_tabs": true,
+	"side_bar_visible": true,
+	"side_bar_width": 306.0,
+	"status_bar_visible": true
+}

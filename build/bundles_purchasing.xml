@@ -1,0 +1,71 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project name="Build JS and CSS bundles" default="all" basedir=".">
+	<target name="all" depends="jquery,validation,jquery_ui"/>
+
+
+    <property name="DEST"    value="../htdocs/purchasing/common/bundles" />
+    <property name="SRC_DIR" value="src" />
+
+
+	<target name="jquery">
+		<copy file="${SRC_DIR}/jquery-3.2.1.js" tofile="${DEST}/jquery.js"/>
+
+		<antcall target="min">
+		    <param name="inputFile"  value="${DEST}/jquery.js"/>
+		    <param name="outputFile" value="${DEST}/jquery.min.js"/>
+		</antcall>
+
+		<echo message="jQuery 3.2.1 built"/>
+	</target>
+
+
+	<target name="jquery_ui">
+		<concat destfile="${DEST}/jquery_ui.js">
+			<filelist files="${SRC_DIR}/jquery.ui/version.js"></filelist>
+			<filelist files="${SRC_DIR}/jquery.ui/widget.js"></filelist>
+			<filelist files="${SRC_DIR}/jquery.ui/plugin.js"></filelist>
+			<filelist files="${SRC_DIR}/jquery.ui/data.js"></filelist>
+			<filelist files="${SRC_DIR}/jquery.ui/position.js"></filelist>
+
+			<filelist files="${SRC_DIR}/jquery.ui/widgets/button.js"></filelist>
+			<filelist files="${SRC_DIR}/jquery.ui.buttonEx.js"></filelist>
+			<filelist files="${SRC_DIR}/jquery.ui/widgets/datepicker.js"></filelist>
+		</concat>
+
+		<antcall target="min">
+		    <param name="inputFile"  value="${DEST}/jquery_ui.js"/>
+		    <param name="outputFile" value="${DEST}/jquery_ui.min.js"/>
+		</antcall>
+
+		<echo message="jQuery UI 1.12.1 built"/>
+	</target>
+
+
+	<target name="validation">
+		<concat destfile="${DEST}/validation.js">
+			<filelist files="${SRC_DIR}/jquery.form.js"></filelist>
+			<filelist files="${SRC_DIR}/jquery.validate.js"></filelist>
+			<filelist files="${SRC_DIR}/jquery.validate-custom.js"></filelist>
+		</concat>
+
+		<antcall target="min">
+		    <param name="inputFile"  value="${DEST}/validation.js"/>
+		    <param name="outputFile" value="${DEST}/validation.min.js"/>
+		</antcall>
+
+		<echo message="Validation 1.17.0 built"/>
+	</target>
+
+
+	<target name="min">
+		<basename property="outputFileBasename" file="${outputFile}"/>
+		<basename property="inputFileBasename" file="${inputFile}"/>
+		<dirname property="outputDir" file="${outputFile}"/>
+
+		<java jar="google-compiler.jar" failonerror="true" fork="true" dir="${outputDir}">
+			<arg line="--warning_level QUIET --js ${inputFileBasename} --js_output_file ${outputFileBasename} --create_source_map ${outputFileBasename}.map --output_wrapper &quot;%output% &#10; //# sourceMappingURL=${outputFileBasename}.map&quot;"/>
+		</java>
+	</target>
+
+
+</project>

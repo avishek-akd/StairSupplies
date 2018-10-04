@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mx:HBox xmlns:mx="http://www.adobe.com/2006/mxml" verticalAlign="middle" horizontalGap="4" creationComplete="init()">
+	<mx:Script>
+		<![CDATA[
+			import mx.events.FlexEvent;
+			
+			private function init():void {
+				date.addEventListener("change", function(event:Event):void {
+							dispatchEvent(event);
+						});
+				clearDate.addEventListener(MouseEvent.CLICK, function(event:MouseEvent):void {
+							date.selectedDate = null;
+							dispatchEvent(new Event("change"));
+						});
+			}
+		]]>
+	</mx:Script>
+
+	<mx:DateField id="date"/>
+	<mx:Image id="clearDate" source="@Embed('assets/delete.png')"/>
+</mx:HBox>
